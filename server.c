@@ -28,6 +28,8 @@ static void *treat(void *); /* functia executata de fiecare thread ce realizeaza
 void raspunde(void *);
 void handle_command(int input_command, char message_to_send[], int cl);
 int login_command(int cl);
+void register_command(int cl);
+
 
 int main ()
 {
@@ -171,6 +173,7 @@ void handle_command(int input_command, char message_to_send[], int cl)
               strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
             break;
         case 2:
+            register_command(cl);
             strcpy(message_to_send, "Command 2");
             break;
         case 3:
@@ -181,7 +184,7 @@ void handle_command(int input_command, char message_to_send[], int cl)
             break;
     }
 }
-      
+    
 
 int login_command(int cl)
 {
@@ -205,4 +208,25 @@ int login_command(int cl)
     return 1;
   else
     return 0;  
+}
+
+
+void register_command(int cl)
+{  
+  char username[100];
+  char password[100];
+
+  if (read(cl, username, sizeof(username)) <= 0)
+  {
+    perror("Error reading username from client.\n");
+  }
+
+  if (read(cl, password, sizeof(password)) <= 0)
+  {
+    perror("Error reading password from client.\n");
+  }
+
+  printf("Username: %s\n", username);
+  printf("Password: %s\n", password);
+
 }
