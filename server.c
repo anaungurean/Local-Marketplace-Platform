@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <pthread.h>
+#include "stdbool.h"
+#include "sqlite3_database.h"
 
 /* portul folosit */
 #define PORT 2908
@@ -19,6 +21,8 @@ typedef struct thData{
 	int idThread; //id-ul thread-ului tinut in evidenta de acest program
 	int cl; //descriptorul intors de accept
 }thData;
+
+Database db;
 
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 void raspunde(void *);
@@ -35,6 +39,15 @@ int main ()
   pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
 	int i=0;
   
+  if (open_database(&db, "database_marketplace.db") != SQLITE_OK) {
+        perror("[server] Error at opening the database.\n");
+        return errno;
+    }
+ else
+    {
+      printf("Database is ready for queries!");
+    }
+
 
   /* crearea unui socket */
   if ((sd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
@@ -179,9 +192,14 @@ void login_command(int cl)
   if (read(cl, password, sizeof(password)) <= 0)
   {
     perror("Error reading password from client.\n");
-
   }
+
   printf("Username: %s\n", username);
   printf("Password: %s\n", password);
 
+  if(check_user_exists(&db,username,password))
+    printf("User exista");
+  else
+    printf("Nu exista");
+  
 }
