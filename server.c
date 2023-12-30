@@ -183,7 +183,7 @@ void handle_command(int input_command, char message_to_send[], int cl)
               strcpy(message_to_send, "Your account has not been registred due to an error. Try again.");
             break;
         case 3:
-            strcpy(message_to_send, "Command 3");
+            strcpy(message_to_send, "Thank you for your visit!");
             break;
         default:
             strcpy(message_to_send, "Invalid command");
@@ -237,12 +237,9 @@ int register_command(int cl)
     perror("Error reading role from client.\n");
   }
 
-  printf("Username: %s\n", username);
-  printf("Password: %s\n", password);
-  printf("Role: %s\n", role);
-
-  // printf("%ld", strlen(username));
-  // printf("%ld", strlen(password));
+  // printf("Username: %s\n", username);
+  // printf("Password: %s\n", password);
+  // printf("Role: %s\n", role);
 
   if(strlen(username) == 0 || strlen(password) == 0)
     return -3;

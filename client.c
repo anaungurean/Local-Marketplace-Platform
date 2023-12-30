@@ -1,8 +1,3 @@
-/* cliTCPIt.c - Exemplu de client TCP
-   Trimite un numar la server; primeste de la server numarul incrementat.
-         
-   Autor: Lenuta Alboaie  <adria@info.uaic.ro> (c)
-*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -67,19 +62,19 @@ int main (int argc, char *argv[])
   printf("%s", WelcomeMenu);
   do{
 
-  printf ("[client]Introduce the number of command: ");
+  printf ("Introduce the number of command: ");
   fflush (stdout);
   read (0, buf, sizeof(buf));
   input_command=atoi(buf);
   
-  /* trimiterea mesajului la server */
+  /* trimiterea comenzii la server */
   if (write (sd,&input_command,sizeof(int)) <= 0)
     {
       perror ("[client]Eroare la write() spre server.\n");
       return errno;
     }
  
-   handle_command(input_command, sd);
+  handle_command(input_command, sd);
   /* citirea raspunsului dat de server 
      (apel blocant pina cind serverul raspunde) */
   if (read (sd, &received_message,sizeof(received_message)) < 0)
@@ -87,7 +82,7 @@ int main (int argc, char *argv[])
       perror ("[client]Eroare la read() de la server.\n");
       return errno;
     }
-  printf ("[client]Mesajul primit este: %s\n", received_message);
+  printf ("\n%s\n", received_message);
   } while(input_command != 3);
   /* inchidem conexiunea, am terminat */
   close (sd);
@@ -107,17 +102,17 @@ void handle_command(int input_command, int sd)
       break;
     }
     case 3:
-    printf("You have selected exit option\n");
+    printf("\nYou have selected exit option.\n");
     break;
     default:
-    printf("You have selected an invalid option\n");
+    printf("You have selected an invalid option.\n");
     break;
   }
 }
 
 
 void login_command(int sd)
-{ printf("You have selected login option\n");
+{ printf("\nYou have selected login option.\n");
       char username[100];
       char password[100];
       
@@ -132,8 +127,8 @@ void login_command(int sd)
       username[strcspn(username, "\n")] = '\0';
       password[strcspn(password, "\n")] = '\0';
       
-      printf("Username: %s\n", username);
-      printf("Password %s\n", password);
+      // printf("Username: %s\n", username);
+      // printf("Password %s\n", password);
 
 
       if(write(sd, username, sizeof(username)) <= 0)
@@ -150,7 +145,7 @@ void login_command(int sd)
   
 void register_command(int sd)
 {
-   printf("You have selected register option\n");
+   printf("\nYou have selected register option.\n");
       char username[100];
       char password[100];
       char role[10];
