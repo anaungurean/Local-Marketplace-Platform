@@ -1,3 +1,8 @@
+/* cliTCPIt.c - Exemplu de client TCP
+   Trimite un numar la server; primeste de la server numarul incrementat.
+         
+   Autor: Lenuta Alboaie  <adria@info.uaic.ro> (c)
+*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,110 +13,119 @@
 #include <netdb.h>
 #include <string.h>
 
+/* codul de eroare returnat de anumite apeluri */
 extern int errno;
-#define WelcomeMenu "\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. login -> in case you have an account already \n 2. register -> in case you don't have an account yet \n 3. exit -> to close the app \n"
+
+/* portul de conectare la server*/
 int port;
-void handler_command(int input_command);
-void register_command();
-int sd;
-struct sockaddr_in server;
+#define WelcomeMenu "\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. login -> in case you have an account already \n 2. register -> in case you don't have an account yet \n 3. exit -> to close the app \n"
 
+int main (int argc, char *argv[])
+{
+  int sd;			// descriptorul de socket
+  struct sockaddr_in server;	// structura folosita pentru conectare 
+  		// mesajul trimis
+  int input_command=0;
+  char buf[10];
+  char received_message[1000];
 
-int main(int argc, char *argv[]) {
-
-    int input_command;
-    char buf[10];
-
-    if (argc != 3) {
-        printf("The syntax is: %s <server_address> <port>\n", argv[0]);
-        return -1;
+  /* exista toate argumentele in linia de comanda? */
+  if (argc != 3)
+    {
+      printf ("Sintaxa: %s <adresa_server> <port>\n", argv[0]);
+      return -1;
     }
 
-    port = atoi(argv[2]);
+  /* stabilim portul */
+  port = atoi (argv[2]);
 
-    if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Error at socket().\n");
-        return errno;
+  /* cream socketul */
+  if ((sd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+      perror ("Eroare la socket().\n");
+      return errno;
     }
 
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr(argv[1]);
-    server.sin_port = htons(port);
-
-    if (connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1) {
-        perror("[client]Error at connect().\n");
-        return errno;
+  /* umplem structura folosita pentru realizarea conexiunii cu serverul */
+  /* familia socket-ului */
+  server.sin_family = AF_INET;
+  /* adresa IP a serverului */
+  server.sin_addr.s_addr = inet_addr(argv[1]);
+  /* portul de conectare */
+  server.sin_port = htons (port);
+  
+  /* ne conectam la server */
+  if (connect (sd, (struct sockaddr *) &server,sizeof (struct sockaddr)) == -1)
+    {
+      perror ("[client]Eroare la connect().\n");
+      return errno;
     }
 
-    printf("[client] %s\n", WelcomeMenu);
-    printf("[client] Please, enter the command:");
-    fflush(stdout);
-    read(0, buf, sizeof(buf));
-    input_command = atoi(buf);
 
-    printf("[client] Am citit %d\n", input_command);
-
-    if (write(sd, &input_command, sizeof(int)) <= 0) {
-        perror("[client]Error writing command to server.\n");
-        return errno;
+  do{
+  /* citirea mesajului */
+  printf ("[client]Introduce the number of command: ");
+  fflush (stdout);
+  read (0, buf, sizeof(buf));
+  input_command=atoi(buf);
+  //scanf("%d",&input_command);
+  // printf("[client] Am citit %d\n",input_command);
+  /* trimiterea mesajului la server */
+  if (write (sd,&input_command,sizeof(int)) <= 0)
+    {
+      perror ("[client]Eroare la write() spre server.\n");
+      return errno;
     }
-    handler_command(input_command);
+ 
+  //  handle_command(input_command);
+
+  /* citirea raspunsului dat de server 
+     (apel blocant pina cind serverul raspunde) */
+  if (read (sd, &received_message,sizeof(received_message)) < 0)
+    {
+      perror ("[client]Eroare la read() de la server.\n");
+      return errno;
+    }
+  printf ("[client]Mesajul primit este: %s\n", received_message);
+  } while(input_command != 3);
+  /* inchidem conexaiunea, am terminat */
+  close (sd);
+
 }
 
-void register_command() {
-    char username[50];
-    char password[50];
-    char role[10];
 
-    printf("[client] Enter username: ");
-    fflush(stdout);
-    fgets(username, sizeof(username), stdin);
-    username[strcspn(username, "\n")] = '\0';
 
-    printf("[client] Enter password: ");
-    fflush(stdout);
-    fgets(password, sizeof(password), stdin);
-    password[strcspn(password, "\n")] = '\0';
 
-    int roleValue;
-    do {
-        printf("[client] Enter role (1 for seller, 2 for buyer): ");
-        fflush(stdout);
-        read(0, role, sizeof(role));
-        roleValue = atoi(role);
 
-        if (roleValue != 1 && roleValue != 2) {
-            printf("[client] Invalid role. Please enter 1 for seller or 2 for buyer.\n");
-        }
-    } while (roleValue != 1 && roleValue != 2);
 
-    role[sizeof(role) - 1] = '\0';
 
-    if (write(sd, &roleValue, sizeof(int)) <= 0) {
-        perror("[client] Error writing role to server.\n");
-    }
 
-    if (write(sd, username, sizeof(username)) <= 0 ||
-        write(sd, password, sizeof(password)) <= 0) {
-        perror("[client] Error writing registration data to server.\n");
-    }
-}
 
-void handler_command(int input_command) {
-    switch (input_command) {
-    case 2:
-        register_command();
+
+
+
+
+
+
+
+
+
+
+void handle_command(int input_command)
+{
+    switch(input_command)
+    {
+        case 1:
+        printf("You have selected login option");
         break;
-
-    default:
-        printf("Unknown command");
+        case 2:
+        printf("You have selected register option");
         break;
-    }
-
-    char message_from_server[200];
-    if (read(sd, &message_from_server, sizeof(message_from_server)) <= 0) {
-        perror("[client] Error reading message from server.\n");
-    } else {
-        printf("[client] Message from server: %s\n", message_from_server);
+        case 3:
+        printf("You have selected exit option");
+        break;
+        default:
+        printf("You have selected an invalid option");
+        break;
     }
 }
