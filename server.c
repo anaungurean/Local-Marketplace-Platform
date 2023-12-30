@@ -177,8 +177,10 @@ void handle_command(int input_command, char message_to_send[], int cl)
               strcpy(message_to_send, "The info can not be empty.");
             else if (ok == -2)
               strcpy(message_to_send, "This username already exists.");
-            else 
+            else if (ok == 1)
               strcpy(message_to_send, "Your account has been registred.");
+            else 
+              strcpy(message_to_send, "Your account has not been registred due to an error. Try again.");
             break;
         case 3:
             strcpy(message_to_send, "Command 3");
@@ -247,7 +249,9 @@ int register_command(int cl)
   else if (check_username_exists(&db,username))
     return -2;
   
-
-  return 1;
+  if (add_new_user(&db, username, password, role) == 1)
+    return 1;
+  else
+    return 0;
 }
 
