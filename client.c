@@ -62,15 +62,14 @@ int main (int argc, char *argv[])
       return errno;
     }
 
-
+  printf("%s", WelcomeMenu);
   do{
-  /* citirea mesajului */
+
   printf ("[client]Introduce the number of command: ");
   fflush (stdout);
   read (0, buf, sizeof(buf));
   input_command=atoi(buf);
-  //scanf("%d",&input_command);
-  // printf("[client] Am citit %d\n",input_command);
+  
   /* trimiterea mesajului la server */
   if (write (sd,&input_command,sizeof(int)) <= 0)
     {
@@ -126,7 +125,6 @@ void handle_command(int input_command, int sd)
       {
         perror("[client]Eroare la write() spre server.\n");
       }
-
       break;
     }
     case 2:

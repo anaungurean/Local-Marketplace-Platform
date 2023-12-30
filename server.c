@@ -27,7 +27,7 @@ Database db;
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 void raspunde(void *);
 void handle_command(int input_command, char message_to_send[], int cl);
-void login_command(int cl);
+int login_command(int cl);
 
 int main ()
 {
@@ -45,7 +45,7 @@ int main ()
     }
  else
     {
-      printf("Database is ready for queries!");
+      printf("Database is ready for queries!\n");
     }
 
 
@@ -91,7 +91,7 @@ int main ()
       thData * td; //parametru functia executata de thread     
       int length = sizeof (from);
 
-      printf ("[server]Asteptam la portul %d...\n",PORT);
+      printf ("[server]Waiting at the port  %d...\n",PORT);
       fflush (stdout);
 
       // client= malloc(sizeof(int));
@@ -114,12 +114,14 @@ int main ()
 	pthread_create(&th[i], NULL, &treat, td);	      
 				
 	}//while    
-};				
+};			
+
+
 static void *treat(void * arg)
 {		
 		struct thData tdL; 
 		tdL= *((struct thData*)arg);	
-		printf ("[thread]- %d - Asteptam mesajul...\n", tdL.idThread);
+		printf ("[thread]- %d - Waiting a command...\n", tdL.idThread);
 		fflush (stdout);		 
 		pthread_detach(pthread_self());		
 		raspunde((struct thData*)arg);
@@ -163,8 +165,10 @@ void handle_command(int input_command, char message_to_send[], int cl)
     switch(input_command)
     {
         case 1:
-            strcpy(message_to_send, "Command 1");
-            login_command(cl);
+            if(login_command(cl)== 1)
+              strcpy(message_to_send, "You are logged in!");
+            else
+              strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
             break;
         case 2:
             strcpy(message_to_send, "Command 2");
@@ -179,7 +183,7 @@ void handle_command(int input_command, char message_to_send[], int cl)
 }
       
 
-void login_command(int cl)
+int login_command(int cl)
 {
   char username[100];
   char password[100];
@@ -194,12 +198,11 @@ void login_command(int cl)
     perror("Error reading password from client.\n");
   }
 
-  printf("Username: %s\n", username);
-  printf("Password: %s\n", password);
+  // printf("Username: %s\n", username);
+  // printf("Password: %s\n", password);
 
   if(check_user_exists(&db,username,password))
-    printf("User exista");
+    return 1;
   else
-    printf("Nu exista");
-  
+    return 0;  
 }
