@@ -160,6 +160,10 @@ void register_command(int sd)
       printf("Enter password: ");
       fflush(stdout);
       fgets(password, sizeof(password), stdin);
+
+      // printf("Enter 1 if you are a seller, 2 otherwise: ");
+      // fflush(stdout);
+      // fgets(password, sizeof(password), stdin);
       
       username[strcspn(username, "\n")] = '\0';
       password[strcspn(password, "\n")] = '\0';

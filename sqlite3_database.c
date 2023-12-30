@@ -80,3 +80,62 @@ bool check_user_exists(Database *db, char *username, char *password) {
         return false;
     }
 }
+
+bool check_username_exists(Database *db, char *username) {
+    char *zErrMsg = 0;
+    int rc;
+    sqlite3_stmt *res;
+    char sql[200];   
+
+    sql[0] = '\0';
+
+    snprintf(sql, sizeof(sql), "SELECT COUNT(ID) FROM USERS WHERE USERNAME=?");
+
+    /* Execute SQL statement */
+    rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+        return false;
+    }
+
+    /* Bind parameters (username and password) to the prepared statement */
+    sqlite3_bind_text(res, 1, username, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(res);
+
+    if (rc == SQLITE_ROW) {
+        /* If a row is returned, the user exists */
+        const char *count = sqlite3_column_text(res, 0);
+
+        if (strcmp(count, "0") == 0) {
+            sqlite3_finalize(res);
+            return false;
+        } else {
+            sqlite3_finalize(res);
+            return true;
+        }
+    } else {
+        /* Handle other errors */
+        fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
+        sqlite3_finalize(res);
+        return false;
+    }
+}
+
+
+int add_new_user(Database *db, const char *username, const char *password, const char *role) {
+    
+    char insert_query[100];
+    snprintf(insert_query, sizeof(insert_query), "INSERT INTO users (username, password, role) VALUES ('%s', '%s', '%s');", username, password, role);
+
+    int rc = sqlite3_exec(db->db, insert_query, callback, 0, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to execute INSERT query: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    printf("User added successfully.\n");
+    return 1;
+}

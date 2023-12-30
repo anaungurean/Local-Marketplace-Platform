@@ -28,7 +28,7 @@ static void *treat(void *); /* functia executata de fiecare thread ce realizeaza
 void raspunde(void *);
 void handle_command(int input_command, char message_to_send[], int cl);
 int login_command(int cl);
-void register_command(int cl);
+int register_command(int cl);
 
 
 int main ()
@@ -173,8 +173,13 @@ void handle_command(int input_command, char message_to_send[], int cl)
               strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
             break;
         case 2:
-            register_command(cl);
-            strcpy(message_to_send, "Command 2");
+            int ok = register_command(cl);
+            if(ok == -3)
+              strcpy(message_to_send, "The info can not be empty.");
+            else if (ok == -2)
+              strcpy(message_to_send, "This username already exists.");
+            else 
+              strcpy(message_to_send, "Your account has been registred.");
             break;
         case 3:
             strcpy(message_to_send, "Command 3");
@@ -188,8 +193,8 @@ void handle_command(int input_command, char message_to_send[], int cl)
 
 int login_command(int cl)
 {
-  char username[100];
-  char password[100];
+  char username[50];
+  char password[50];
 
   if (read(cl, username, sizeof(username)) <= 0)
   {
@@ -211,7 +216,7 @@ int login_command(int cl)
 }
 
 
-void register_command(int cl)
+int register_command(int cl)
 {  
   char username[100];
   char password[100];
@@ -228,5 +233,14 @@ void register_command(int cl)
 
   printf("Username: %s\n", username);
   printf("Password: %s\n", password);
+  printf("%ld", strlen(username));
+  printf("%ld", strlen(password));
 
+  if(strlen(username) == 0 || strlen(password) == 0)
+    return -3;
+  else if (check_username_exists(&db,username))
+    return -2;
+  
+  
+  return 1;
 }
