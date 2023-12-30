@@ -30,7 +30,6 @@ void handle_command(int input_command, char message_to_send[], int cl);
 int login_command(int cl);
 int register_command(int cl);
 
-
 int main ()
 {
   struct sockaddr_in server;	// structura folosita de server
@@ -189,12 +188,12 @@ void handle_command(int input_command, char message_to_send[], int cl)
             break;
     }
 }
-    
+      
 
 int login_command(int cl)
 {
-  char username[50];
-  char password[50];
+  char username[100];
+  char password[100];
 
   if (read(cl, username, sizeof(username)) <= 0)
   {
@@ -215,11 +214,11 @@ int login_command(int cl)
     return 0;  
 }
 
-
 int register_command(int cl)
 {  
   char username[100];
   char password[100];
+  char role[10];
 
   if (read(cl, username, sizeof(username)) <= 0)
   {
@@ -231,16 +230,24 @@ int register_command(int cl)
     perror("Error reading password from client.\n");
   }
 
+  if (read(cl, role, sizeof(role)) <= 0)
+  {
+    perror("Error reading role from client.\n");
+  }
+
   printf("Username: %s\n", username);
   printf("Password: %s\n", password);
-  printf("%ld", strlen(username));
-  printf("%ld", strlen(password));
+  printf("Role: %s\n", role);
+
+  // printf("%ld", strlen(username));
+  // printf("%ld", strlen(password));
 
   if(strlen(username) == 0 || strlen(password) == 0)
     return -3;
   else if (check_username_exists(&db,username))
     return -2;
   
-  
+
   return 1;
 }
+

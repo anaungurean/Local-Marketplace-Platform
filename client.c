@@ -71,7 +71,7 @@ int main (int argc, char *argv[])
   fflush (stdout);
   read (0, buf, sizeof(buf));
   input_command=atoi(buf);
-
+  
   /* trimiterea mesajului la server */
   if (write (sd,&input_command,sizeof(int)) <= 0)
     {
@@ -103,11 +103,10 @@ void handle_command(int input_command, int sd)
       break;
     }
     case 2:
-    {
-      register_command(sd);
+    {  register_command(sd);
       break;
     }
-   case 3:
+    case 3:
     printf("You have selected exit option\n");
     break;
     default:
@@ -115,10 +114,10 @@ void handle_command(int input_command, int sd)
     break;
   }
 }
-      
+
+
 void login_command(int sd)
-{
-      printf("You have selected login option\n");
+{ printf("You have selected login option\n");
       char username[100];
       char password[100];
       
@@ -133,8 +132,9 @@ void login_command(int sd)
       username[strcspn(username, "\n")] = '\0';
       password[strcspn(password, "\n")] = '\0';
       
-      // printf("Username: %s\n", username);
-      // printf("Password %s\n", password);
+      printf("Username: %s\n", username);
+      printf("Password %s\n", password);
+
 
       if(write(sd, username, sizeof(username)) <= 0)
       {
@@ -147,11 +147,13 @@ void login_command(int sd)
       }
 }
 
+  
 void register_command(int sd)
 {
-   printf("You have selected login option\n");
+   printf("You have selected register option\n");
       char username[100];
       char password[100];
+      char role[10];
       
       printf("Enter username: ");
       fflush(stdout);
@@ -160,16 +162,28 @@ void register_command(int sd)
       printf("Enter password: ");
       fflush(stdout);
       fgets(password, sizeof(password), stdin);
-
-      // printf("Enter 1 if you are a seller, 2 otherwise: ");
-      // fflush(stdout);
-      // fgets(password, sizeof(password), stdin);
       
       username[strcspn(username, "\n")] = '\0';
       password[strcspn(password, "\n")] = '\0';
       
+      int roleValue;
+       do {
+        printf("Enter role (1 for seller, 2 for buyer): ");
+        fflush(stdout);
+        read(0, role, sizeof(role));
+        roleValue = atoi(role);
+
+        if (roleValue != 1 && roleValue != 2) {
+            printf("[client] Invalid role. Please enter 1 for seller or 2 for buyer.\n");
+        }
+    } while (roleValue != 1 && roleValue != 2);
       // printf("Username: %s\n", username);
       // printf("Password %s\n", password);
+
+      if (roleValue == 1)
+         strcpy(role,"Seller");
+      else
+          strcpy(role,"Buyer");
 
       if(write(sd, username, sizeof(username)) <= 0)
       {
@@ -177,6 +191,11 @@ void register_command(int sd)
       }
 
       if(write(sd, password, sizeof(password)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, role, sizeof(role)) <= 0)
       {
         perror("[client]Eroare la write() spre server.\n");
       }
