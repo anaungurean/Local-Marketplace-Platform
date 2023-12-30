@@ -38,22 +38,22 @@ int execute_query(Database *db, const char *query) {
     return rc;
 }
 
-bool check_user_exists(Database *db, char *username, char *password) {
+int check_user_exists(Database *db, char *username, char *password) {
     char *zErrMsg = 0;
     int rc;
     sqlite3_stmt *res;
-    char sql[200];   
+    char sql[200];
 
     sql[0] = '\0';
 
-    snprintf(sql, sizeof(sql), "SELECT COUNT(ID) FROM USERS WHERE USERNAME=? AND PASSWORD=?");
+    snprintf(sql, sizeof(sql), "SELECT ID FROM USERS WHERE USERNAME=? AND PASSWORD=?");
 
     /* Execute SQL statement */
     rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
 
     if (rc != SQLITE_OK) {
         fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
-        return false;
+        return -1;  // Return -1 to indicate an error
     }
 
     /* Bind parameters (username and password) to the prepared statement */
@@ -64,22 +64,17 @@ bool check_user_exists(Database *db, char *username, char *password) {
 
     if (rc == SQLITE_ROW) {
         /* If a row is returned, the user exists */
-        const char *count = sqlite3_column_text(res, 0);
-
-        if (strcmp(count, "0") == 0) {
-            sqlite3_finalize(res);
-            return false;
-        } else {
-            sqlite3_finalize(res);
-            return true;
-        }
+        int user_id = sqlite3_column_int(res, 0);
+        sqlite3_finalize(res);
+        return user_id;
     } else {
         /* Handle other errors */
         fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
         sqlite3_finalize(res);
-        return false;
+        return -1;  // Return -1 to indicate an error
     }
 }
+
 
 bool check_username_exists(Database *db, char *username) {
     char *zErrMsg = 0;

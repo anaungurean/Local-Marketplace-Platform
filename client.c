@@ -13,10 +13,13 @@ extern int errno;
 
 /* portul de conectare la server*/
 int port;
-#define WelcomeMenu "\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. login -> in case you have an account already \n 2. register -> in case you don't have an account yet \n 3. exit -> to close the app \n"
+#define WelcomeMenu "\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. login -> in case you have an account already \n 2. register -> in case you don't have an account yet \n 3. exit -> to close the app \n\n"
+#define HomeMenu "\n The new commands are:.\n\n"
+
 void handle_command(int input_command, int sd);
 void login_command(int sd);
 void register_command(int sd);
+void print_home_menu(char *received_message);
 
 int main (int argc, char *argv[])
 {
@@ -83,6 +86,7 @@ int main (int argc, char *argv[])
       return errno;
     }
   printf ("\n%s\n", received_message);
+  print_home_menu(received_message);
   } while(input_command != 3);
   /* inchidem conexiunea, am terminat */
   close (sd);
@@ -112,7 +116,7 @@ void handle_command(int input_command, int sd)
 
 
 void login_command(int sd)
-{ printf("\nYou have selected login option.\n");
+{     printf("\nYou have selected login option.\n");
       char username[100];
       char password[100];
       
@@ -172,8 +176,6 @@ void register_command(int sd)
             printf("[client] Invalid role. Please enter 1 for seller or 2 for buyer.\n");
         }
     } while (roleValue != 1 && roleValue != 2);
-      // printf("Username: %s\n", username);
-      // printf("Password %s\n", password);
 
       if (roleValue == 1)
          strcpy(role,"Seller");
@@ -194,5 +196,13 @@ void register_command(int sd)
       {
         perror("[client]Eroare la write() spre server.\n");
       }
+}
 
+
+
+void print_home_menu(char *received_message)
+{
+  if(strcmp(received_message, "You are logged in!") == 0)
+     printf("\n%s", HomeMenu);
+  
 }

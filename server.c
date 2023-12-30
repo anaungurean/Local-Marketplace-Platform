@@ -20,13 +20,14 @@ extern int errno;
 typedef struct thData{
 	int idThread; //id-ul thread-ului tinut in evidenta de acest program
 	int cl; //descriptorul intors de accept
+  int userId;
 }thData;
 
 Database db;
 
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 void raspunde(void *);
-void handle_command(int input_command, char message_to_send[], int cl);
+void handle_command(int input_command, char message_to_send[], struct thData *);
 int login_command(int cl);
 int register_command(int cl);
 
@@ -146,7 +147,7 @@ void raspunde(void *arg)
 
 			}
   char message_to_send[100];
-  handle_command(input_command, message_to_send, tdL.cl);
+  handle_command(input_command, message_to_send, &tdL);
   printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.idThread, message_to_send);
   if (write (tdL.cl, message_to_send, sizeof(message_to_send)) <= 0)
 		{
@@ -160,19 +161,24 @@ void raspunde(void *arg)
 
 }
 
-void handle_command(int input_command, char message_to_send[], int cl)
+void handle_command(int input_command, char message_to_send[], struct thData * tdL)
 {  
 
     switch(input_command)
-    {
+    { int ok;
         case 1:
-            if(login_command(cl)== 1)
+            ok = login_command(tdL->cl);
+            if(ok != -1)
+              {
               strcpy(message_to_send, "You are logged in!");
+              tdL->userId = ok;
+              printf("User id: %d\n", tdL->userId);
+              }
             else
               strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
             break;
         case 2:
-            int ok = register_command(cl);
+            ok = register_command(tdL->cl);
             if(ok == -3)
               strcpy(message_to_send, "The info can not be empty.");
             else if (ok == -2)
@@ -209,11 +215,8 @@ int login_command(int cl)
 
   // printf("Username: %s\n", username);
   // printf("Password: %s\n", password);
-
-  if(check_user_exists(&db,username,password))
-    return 1;
-  else
-    return 0;  
+  return check_user_exists(&db, username, password);
+ 
 }
 
 int register_command(int cl)
