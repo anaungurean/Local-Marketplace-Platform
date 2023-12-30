@@ -22,7 +22,8 @@ typedef struct thData{
 
 static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 void raspunde(void *);
-void handle_command(int input_command, char message_to_send[]);
+void handle_command(int input_command, char message_to_send[], int cl);
+void login_command(int cl);
 
 int main ()
 {
@@ -129,7 +130,7 @@ void raspunde(void *arg)
 
 			}
   char message_to_send[100];
-  handle_command(input_command, message_to_send);
+  handle_command(input_command, message_to_send, tdL.cl);
   printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.idThread, message_to_send);
   if (write (tdL.cl, message_to_send, sizeof(message_to_send)) <= 0)
 		{
@@ -143,12 +144,14 @@ void raspunde(void *arg)
 
 }
 
-void handle_command(int input_command, char message_to_send[])
+void handle_command(int input_command, char message_to_send[], int cl)
 {  
+
     switch(input_command)
     {
         case 1:
             strcpy(message_to_send, "Command 1");
+            login_command(cl);
             break;
         case 2:
             strcpy(message_to_send, "Command 2");
@@ -162,3 +165,23 @@ void handle_command(int input_command, char message_to_send[])
     }
 }
       
+
+void login_command(int cl)
+{
+  char username[100];
+  char password[100];
+
+  if (read(cl, username, sizeof(username)) <= 0)
+  {
+    perror("Error reading username from client.\n");
+  }
+
+  if (read(cl, password, sizeof(password)) <= 0)
+  {
+    perror("Error reading password from client.\n");
+
+  }
+  printf("Username: %s\n", username);
+  printf("Password: %s\n", password);
+
+}

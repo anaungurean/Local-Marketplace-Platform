@@ -19,6 +19,7 @@ extern int errno;
 /* portul de conectare la server*/
 int port;
 #define WelcomeMenu "\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. login -> in case you have an account already \n 2. register -> in case you don't have an account yet \n 3. exit -> to close the app \n"
+void handle_command(int input_command, int sd);
 
 int main (int argc, char *argv[])
 {
@@ -77,8 +78,7 @@ int main (int argc, char *argv[])
       return errno;
     }
  
-  //  handle_command(input_command);
-
+   handle_command(input_command, sd);
   /* citirea raspunsului dat de server 
      (apel blocant pina cind serverul raspunde) */
   if (read (sd, &received_message,sizeof(received_message)) < 0)
@@ -88,44 +88,56 @@ int main (int argc, char *argv[])
     }
   printf ("[client]Mesajul primit este: %s\n", received_message);
   } while(input_command != 3);
-  /* inchidem conexaiunea, am terminat */
+  /* inchidem conexiunea, am terminat */
   close (sd);
-
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void handle_command(int input_command)
+void handle_command(int input_command, int sd)
 {
-    switch(input_command)
+  switch(input_command)
+  {
+    case 1:
     {
-        case 1:
-        printf("You have selected login option");
-        break;
-        case 2:
-        printf("You have selected register option");
-        break;
-        case 3:
-        printf("You have selected exit option");
-        break;
-        default:
-        printf("You have selected an invalid option");
-        break;
+      printf("You have selected login option\n");
+      char username[100];
+      char password[100];
+      
+      printf("Enter username: ");
+      fflush(stdout);
+      fgets(username, sizeof(username), stdin);
+      
+      printf("Enter password: ");
+      fflush(stdout);
+      fgets(password, sizeof(password), stdin);
+      
+      username[strcspn(username, "\n")] = '\0';
+      password[strcspn(password, "\n")] = '\0';
+      
+      printf("Username: %s\n", username);
+      printf("Password %s\n", password);
+
+
+      if(write(sd, username, sizeof(username)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, password, sizeof(password)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      break;
     }
+    case 2:
+    printf("You have selected register option\n");
+    break;
+    case 3:
+    printf("You have selected exit option\n");
+    break;
+    default:
+    printf("You have selected an invalid option\n");
+    break;
+  }
 }
+      
