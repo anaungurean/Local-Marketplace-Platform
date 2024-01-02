@@ -11,6 +11,7 @@
 #include "stdbool.h"
 #include "sqlite3_database.h"
 
+
 /* portul folosit */
 #define PORT 2908
 
@@ -21,6 +22,7 @@ typedef struct thData{
 	int idThread; //id-ul thread-ului tinut in evidenta de acest program
 	int cl; //descriptorul intors de accept
   int userId;
+  char role[10];
 }thData;
 
 Database db;
@@ -30,6 +32,9 @@ void raspunde(void *);
 void handle_command(int input_command, char message_to_send[], struct thData *);
 int login_command(int cl);
 int register_command(int cl);
+void add_product_command(int cl, int user_id);
+void view_my_products_command(int cl, int user_id, char *products);
+void delete_product_command(int cl, int user_id, char *message_to_send);
 
 int main ()
 {
@@ -146,7 +151,7 @@ void raspunde(void *arg)
 			  perror ("Eroare la read() de la client.\n");
 
 			}
-  char message_to_send[100];
+  char message_to_send[9000];
   handle_command(input_command, message_to_send, &tdL);
   printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.idThread, message_to_send);
   if (write (tdL.cl, message_to_send, sizeof(message_to_send)) <= 0)
@@ -167,12 +172,17 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
     switch(input_command)
     { int ok;
         case 1:
-            ok = login_command(tdL->cl);
-            if(ok != -1)
+            int userId = login_command(tdL->cl);
+            if(userId != -1)
               {
-              strcpy(message_to_send, "You are logged in!");
-              tdL->userId = ok;
+              tdL->userId = userId;
+              get_role_user(&db, tdL->userId, tdL->role);
               printf("User id: %d\n", tdL->userId);
+              printf("User role: %s\n", tdL->role);
+              if (strcmp(tdL->role, "Seller") == 0)
+                strcpy(message_to_send, "You are logged in as a Seller!");
+              else
+                strcpy(message_to_send, "You are logged in as a Buyer!");
               }
             else
               strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
@@ -190,6 +200,34 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
             break;
         case 3:
             strcpy(message_to_send, "Thank you for your visit!");
+            break;
+        case 4 :
+            if (strcmp(tdL->role, "Seller") == 0)
+              {
+                add_product_command(tdL->cl, tdL->userId);
+                strcpy(message_to_send, "You have added a new product.");
+              }
+            else
+              strcpy(message_to_send, "You don't have the permissions to add a product.");
+            break;
+        case 6 :
+            if (strcmp(tdL->role, "Seller") == 0)
+              {
+                view_my_products_command(tdL->cl, tdL->userId, message_to_send);
+                delete_product_command(tdL->cl, tdL->userId, message_to_send);
+              }
+            else
+              strcpy(message_to_send, "You don't have the permissions to delete the products.");
+        case 7:
+            if (strcmp(tdL->role, "Seller") == 0)
+              {
+                char products[9000];
+                products[0] = '\0';
+                view_my_products_command(tdL->cl, tdL->userId, products);
+                strcpy(message_to_send, products);
+              }
+            else
+              strcpy(message_to_send, "You don't have the permissions to delete a product.");
             break;
         default:
             strcpy(message_to_send, "Invalid command");
@@ -213,8 +251,6 @@ int login_command(int cl)
     perror("Error reading password from client.\n");
   }
 
-  // printf("Username: %s\n", username);
-  // printf("Password: %s\n", password);
   return check_user_exists(&db, username, password);
  
 }
@@ -240,10 +276,6 @@ int register_command(int cl)
     perror("Error reading role from client.\n");
   }
 
-  // printf("Username: %s\n", username);
-  // printf("Password: %s\n", password);
-  // printf("Role: %s\n", role);
-
   if(strlen(username) == 0 || strlen(password) == 0)
     return -3;
   else if (check_username_exists(&db,username))
@@ -255,3 +287,68 @@ int register_command(int cl)
     return 0;
 }
 
+void add_product_command(int cl, int user_id)
+{
+    char name[100];
+    char category[100];
+    char price[100];
+    char stock[100];
+    char unit_of_measure[100];
+
+    if (read(cl, name, sizeof(name)) <= 0)
+    {
+      perror("Error reading name from client.\n");
+    }
+
+    if (read(cl, category, sizeof(category)) <= 0)
+    {
+      perror("Error reading category from client.\n");
+    }
+
+    if (read(cl, price, sizeof(price)) <= 0)
+    {
+      perror("Error reading price from client.\n");
+    }
+
+    if (read(cl, stock, sizeof(stock)) <= 0)
+    {
+      perror("Error reading stock from client.\n");
+    }
+
+    if (read(cl, unit_of_measure, sizeof(unit_of_measure)) <= 0)
+    {
+      perror("Error reading unit_of_measure from client.\n");
+    }
+
+    printf("Name: %s\n", name);
+    printf("Category: %s\n", category);
+    printf("Price: %s\n", price);
+    printf("Stock: %s\n", stock);
+    printf("Unit of measure: %s\n", unit_of_measure);
+
+    if (add_new_product(&db, name, category, atof(price), atoi(stock), unit_of_measure, user_id) == 1)
+      printf("Product added successfully.\n");
+    else
+      printf("Product not added.\n");
+}
+
+void view_my_products_command(int cl, int user_id, char *products)
+{
+  display_products_by_user_id(&db, user_id,products);
+  printf("%s\n", products);
+}
+
+void delete_product_command(int cl, int user_id, char *message_to_send)
+{
+  char id[100];
+
+  if (read(cl, id, sizeof(id)) <= 0)
+  {
+    perror("Error reading id from client.\n");
+  }
+
+  if (delete_product(&db, atoi(id), user_id) == 1)
+    strcpy(message_to_send, "Product deleted successfully.");
+  else
+    strcpy(message_to_send, "You don't have the right to delete this product.");
+}
