@@ -17,10 +17,10 @@ extern int errno;
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product \n 7. See your products \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. Buy a product.\n 5. See all products. \n 6. See all products from a category. \n 7. See all products from a seller. \n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products\n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n\n"
 
-void handle_command(int input_command, int sd);
+void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
 void register_command(int sd);
 void print_home_menu(char *received_message);
@@ -29,6 +29,11 @@ void set_role(char *received_message);
 void add_product_command(int sd);
 void view_my_products_command();
 void delete_product_command(int sd);
+void display_info_own_product(int sd);
+void edit_product_command(int sd);
+void view_all_products_command(int sd);
+void buy_a_product_command(int sd);
+void view_of_purchases_command(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -91,7 +96,7 @@ int read_commands(int sd)
       return errno;
     }
  
-  handle_command(input_command, sd);
+  handle_command(input_command, sd, received_message);
   /* citirea raspunsului dat de server 
      (apel blocant pina cind serverul raspunde) */
   if (read (sd, &received_message,sizeof(received_message)) < 0)
@@ -112,50 +117,52 @@ int read_commands(int sd)
   return 0;
 }
 
-void handle_command(int input_command, int sd)
+void handle_command(int input_command, int sd, char *received_message)
 {
   switch(input_command)
   {
     case 1:
-    {
       login_command(sd);
       break;
-    }
     case 2:
-    {  register_command(sd);
+      register_command(sd);
       break;
-    }
     case 3:
-    { printf("\nYou have selected exit option.\n");
+      printf("\nYou have selected exit option.\n");
       break;
-    }
     case 4:
-    { 
       if (strcmp(role,"Seller") == 0)
           add_product_command(sd);
       else
-        printf("You don't have the permissions to add a product.\n");
+          view_all_products_command(sd);
       break;
-    }
+    case 5:
+      if (strcmp(role, "Seller") == 0)  
+          edit_product_command(sd);
+      else
+          buy_a_product_command(sd);
+      break;
     case 6:
-    {
       if (strcmp(role,"Seller") == 0)
           delete_product_command(sd);
       else
-        printf("You don't have the permissions to delete a product.\n");
+          view_of_purchases_command(sd);
       break;
-    }
     case 7:
-    {
       if (strcmp(role,"Seller") == 0)
           view_my_products_command();
       else
         printf("You don't have the permissions to buy a product.\n");
       break;
-    }
+    case 8:
+      if (strcmp(role,"Seller") == 0)
+          view_all_products_command(sd);
+      else
+        printf("You don't have the permissions to see all products.\n");
+      break;
     default:
       printf("You have selected an invalid option.\n");
-    break;
+      break;
   }
 }
 
@@ -420,11 +427,10 @@ void add_product_command(int sd)
       }
 }
 
- void view_my_products_command()
+void view_my_products_command()
  {
    printf("\nYou have selected view my products option.\n");
  }
-
 
 void delete_product_command(int sd)
 {
@@ -446,4 +452,234 @@ void delete_product_command(int sd)
       {
         perror("[client]Eroare la write() spre server.\n");
       }
+}
+
+
+void display_info_own_product(int sd)
+{
+  char id_product[100];
+  do{
+    printf("\nEnter the id of the product you want to see: ");
+    fflush(stdout);
+    fgets(id_product, sizeof(id_product), stdin);
+    if (atoi(id_product) <= 0)
+        printf("Invalid id.\n");
+  }
+  while(atoi(id_product) <= 0);
+
+  if(write(sd, id_product, sizeof(id_product)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  
+}
+
+void edit_product_command(int sd)
+{
+      printf("\nYou have selected edit product option.\n");
+      char name[100];
+      char category[100];
+      char price[100];
+      char stock[100];
+      char unit_of_measure[100];
+      int ok = 0;
+      char id_product[100];
+
+      do{
+        printf("\nEnter the id of the product you want to edit: ");
+        fflush(stdout);
+        fgets(id_product, sizeof(id_product), stdin);
+        if (atoi(id_product) <= 0)
+            printf("Invalid id.\n");
+      }
+      while(atoi(id_product) <= 0);
+
+      printf("\nEnter the new name of product: ");
+      fflush(stdout);
+      fgets(name, sizeof(name), stdin);
+      
+      do{
+        ok = 0;
+        printf("\nChoose the new category: \n");
+        printf("1. Fruits \n");
+        printf("2. Vegetables \n");
+        printf("3. Food \n");
+        printf("4. Drinks \n");
+        printf("5. Clothes \n");
+        printf("6. Electronics \n");
+        printf("7. Books \n");
+        printf("8. Other \n");
+        printf("Enter the category: ");
+        fflush(stdout);
+        fgets(category, sizeof(category), stdin);
+
+        if (atoi(category) < 1 || atoi(category) > 8)
+          { printf("Invalid category. Please choose a number between 1 and 8.\n");
+            ok = 1;
+          }
+        else{
+          switch(atoi(category))
+          {
+            case 1:
+            strcpy(category,"Fruits");
+            break;
+            case 2:
+            strcpy(category,"Vegetables");
+            break;
+            case 3:
+            strcpy(category,"Food");
+            break;
+            case 4:
+            strcpy(category,"Drinks");
+            break;
+            case 5:
+            strcpy(category,"Clothes");
+            break;
+            case 6:
+            strcpy(category,"Electronics");
+            break;
+            case 7:
+            strcpy(category,"Books");
+            break;
+            case 8:
+            strcpy(category,"Other");
+            break;
+          }
+        }
+      }while(ok);
+      
+      do{
+        ok = 0;
+        printf("\nEnter the new price in euro: ");
+        fflush(stdout);
+        fgets(price, sizeof(price), stdin);
+        if (atoi(price) <= 0)
+          {printf("Invalid price.\n");
+            ok = 1;
+          }
+      }
+      while(ok);
+
+      do{
+        ok = 0;
+        printf("\nEnter the new stock: ");
+        fflush(stdout);
+        fgets(stock, sizeof(stock), stdin);
+        if (atoi(stock) <= 0)
+          {printf("Invalid stock.\n");
+            ok = 1;
+          }
+      }
+      while(ok);
+
+      do{
+        ok = 0;
+        printf("\nChoose the new unity of measure:\n");
+        printf("1. Meter \n");
+        printf("2. Kilogram \n");
+        printf("3. Liter \n");
+        printf("4. Piece \n");
+        printf("Enter the unity of measure: ");
+        fflush(stdout);
+        fgets(unit_of_measure, sizeof(unit_of_measure), stdin);
+        if (atoi(unit_of_measure) < 1 || atoi(unit_of_measure) > 4)
+          { printf("Invalid category. Please choose a number between 1 and 4.\n");
+            ok = 1;
+          }
+        else{
+          switch(atoi(unit_of_measure))
+          {
+            case 1:
+            strcpy(unit_of_measure,"Meter");
+            break;
+            case 2:
+            strcpy(unit_of_measure,"Kilogram");
+            break;
+            case 3:
+            strcpy(unit_of_measure,"Liter");
+            break;
+            case 4:
+            strcpy(unit_of_measure,"Piece");
+            break;
+          }
+        }
+      }while(ok);
+      
+      id_product[strcspn(id_product, "\n")] = '\0';
+      name[strcspn(name, "\n")] = '\0';
+      category[strcspn(category, "\n")] = '\0';
+      price[strcspn(price, "\n")] = '\0';
+      stock[strcspn(stock, "\n")] = '\0';
+      unit_of_measure[strcspn(unit_of_measure, "\n")] = '\0';
+
+      if (write(sd, id_product,sizeof(id_product)) <= 0)
+      {
+        perror ("[client]Eroare la write() spre server.\n");
+      }
+      
+      if(write(sd, name, sizeof(name)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, category, sizeof(category)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, price, sizeof(price)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, stock, sizeof(stock)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+      if(write(sd, unit_of_measure, sizeof(unit_of_measure)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+}
+
+void view_all_products_command(int sd)
+{
+  printf("\nYou have selected to view all products option.\n");
+  printf("\nThese are all the products: \n");
+}
+
+void buy_a_product_command(int sd)
+{
+  char id_product[100];
+  char quantity[100];
+  printf("\nYou have selected buy a product option.\n");
+  do{
+    printf("\nEnter the id of the product you want to buy: ");
+    fflush(stdout);
+    fgets(id_product, sizeof(id_product), stdin);
+    if (atoi(id_product) <= 0)
+        printf("Invalid id.\n");
+    printf("\nEnter the quantity you want to buy: ");
+    fflush(stdout);
+    fgets(quantity, sizeof(quantity), stdin);
+    if (atoi(quantity) <= 0)
+        printf("Invalid quantity.\n");
+  }
+  while(atoi(id_product) <= 0 || atoi(quantity) <= 0);
+
+  if(write(sd, id_product, sizeof(id_product)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  if(write(sd, quantity, sizeof(quantity)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      } 
+ 
+}
+
+void view_of_purchases_command(int sd)
+{
+  printf("\nThese are the purchases that you made: \n");
 }

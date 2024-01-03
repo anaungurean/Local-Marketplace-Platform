@@ -11,23 +11,20 @@
 #include "stdbool.h"
 #include "sqlite3_database.h"
 
-
-/* portul folosit */
 #define PORT 2908
 
-/* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
 typedef struct thData{
-	int idThread; //id-ul thread-ului tinut in evidenta de acest program
-	int cl; //descriptorul intors de accept
+	int idThread; 
+	int cl; 
   int userId;
   char role[10];
 }thData;
 
 Database db;
 
-static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
+static void *treat(void *); 
 void raspunde(void *);
 void handle_command(int input_command, char message_to_send[], struct thData *);
 int login_command(int cl);
@@ -35,6 +32,11 @@ int register_command(int cl);
 void add_product_command(int cl, int user_id);
 void view_my_products_command(int cl, int user_id, char *products);
 int delete_product_command(int cl, int user_id);
+void check_if_user_can_edit_product(int cl, int user_id, char *info, char *id_product);
+int edit_product_command(int cl, int user_id);
+void view_all_products_command(int cl, char *products);
+int buy_a_product_command(int cl, int user_id);
+void display_my_transactions(int cl, int user_id, char *transactions);
 
 int main ()
 {
@@ -206,8 +208,34 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, "You have added a new product.");
               }
             else
-              strcpy(message_to_send, "You don't have the permissions to add a product.");
+              {
+                char products[9000];
+                products[0] = '\0';
+                view_all_products_command(tdL->cl,products);
+                strcpy(message_to_send, products);
+              }
             break;
+        case 5 :
+             if (strcmp(tdL->role, "Seller") == 0)
+                {
+                  ok = edit_product_command(tdL->cl, tdL->userId);
+                  if (ok == 1)
+                    strcpy(message_to_send, "You have edited the product.");
+                  else
+                    strcpy(message_to_send, "You don't have the permissions to edit this product.");
+                }
+             else
+                 {
+                  ok = buy_a_product_command(tdL->cl, tdL->userId);
+                  if (ok == -3)
+                    strcpy(message_to_send, "The product doesn't exist.");
+                  else if (ok == -2)
+                     strcpy(message_to_send, "There's not enough quantity of this product.");
+                  else {
+                    sprintf(message_to_send, "The total cost is: %d euro. Thank you for your purchase.", ok);
+                     
+                 }
+              break;
         case 6 :
             if (strcmp(tdL->role, "Seller") == 0)
               {
@@ -218,7 +246,12 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                   strcpy(message_to_send, "You don't have the permissions to delete this product.");
               }
             else
-              strcpy(message_to_send, "You don't have the permissions to delete the products.");
+            {   char transactions[9000];
+                transactions[0] = '\0';
+                display_my_transactions(tdL->cl, tdL->userId, transactions);
+                strcpy(message_to_send, transactions);
+            }
+
             break;
         case 7:
             if (strcmp(tdL->role, "Seller") == 0)
@@ -229,12 +262,22 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, products);
               }
             else
-              strcpy(message_to_send, "You don't have the permissions to delete a product.");
+               strcpy(message_to_send, "You don't have the permissions to view your products.");
             break;
+        case 8:
+              if (strcmp(tdL->role, "Seller") == 0)
+              {
+                char products[9000];
+                products[0] = '\0';
+                view_all_products_command(tdL->cl,products);
+                strcpy(message_to_send, products);
+              }
+              break;
         default:
             strcpy(message_to_send, "Invalid command");
             break;
     }
+}
 }
       
 
@@ -334,7 +377,6 @@ void view_my_products_command(int cl, int user_id, char *products)
   printf("%s\n", products);
 }
 
-
 int delete_product_command(int cl, int user_id)
 {
   char id[100];
@@ -348,4 +390,111 @@ int delete_product_command(int cl, int user_id)
     return 1;
   else 
     return 0;
+}
+
+void check_if_user_can_edit_product(int cl, int user_id, char *info, char *id_product)
+{
+
+  if (read(cl, id_product, sizeof(id_product)) <= 0)
+  {
+    perror("Error reading id_product from client.\n");
+  }
+
+  if (check_product(&db, atoi(id_product), user_id) == 1)
+     {
+       display_products_by_user_id(&db, user_id, info);
+     }
+  else
+    strcpy(info, "You can't edit this product.");
+
+}
+
+int edit_product_command(int cl, int user_id)
+{
+  char id_product[100];
+  char new_name[100];
+  char new_category[100];
+  char new_price[100];
+  char new_stock[100];
+  char new_unit_of_measure[100];
+
+  if (read(cl, id_product, sizeof(id_product)) <= 0)
+  {
+    perror("Error reading id from client.\n");
+  }
+  
+  if (read(cl, new_name, sizeof(new_name)) <= 0)
+  {
+    perror("Error reading name from client.\n");
+  }
+
+  if (read(cl, new_category, sizeof(new_category)) <= 0)
+  {
+    perror("Error reading category from client.\n");
+  }
+
+  if (read(cl, new_price, sizeof(new_price)) <= 0)
+  {
+    perror("Error reading price from client.\n");
+  }
+
+  if (read(cl, new_stock, sizeof(new_stock)) <= 0)
+  {
+    perror("Error reading stock from client.\n");
+  }
+
+  if (read(cl, new_unit_of_measure, sizeof(new_unit_of_measure)) <= 0)
+  {
+    perror("Error reading unit_of_measure from client.\n");
+  }
+   
+  if (check_product(&db, atoi(id_product), user_id) == 1)
+    {
+      if (update_product(&db, atoi(id_product), new_name, new_category, atof(new_price), atoi(new_stock), new_unit_of_measure,user_id) == 1)
+        return 1;
+      else
+        return 0;
+    }
+  else
+    return 0;
+  
+}
+
+void view_all_products_command(int cl, char *products)
+{
+  display_all_products(&db,products);
+}
+
+int buy_a_product_command(int cl, int user_id)
+{
+  char id_product[100];
+  char quantity[100];
+
+  if (read(cl, id_product, sizeof(id_product)) <= 0)
+  {
+    perror("Error reading id_product from client.\n");
+  }
+
+  if (read(cl, quantity, sizeof(quantity)) <= 0)
+  {
+    perror("Error reading quantity from client.\n");
+  }
+
+   if (check_existence_product(&db, atoi(id_product)) == 0)
+      return -3;
+   else if (check_quantity_product(&db, atoi(id_product), atoi(quantity)) == 0)
+      return -2;
+   else 
+     {
+        int total_cost = select_product_price(&db, atoi(id_product)) * atoi(quantity);
+        update_quantity_product(&db, atoi(id_product), atoi(quantity));
+        insert_new_transactions(&db, atoi(id_product), atoi(quantity), user_id);
+        return total_cost;
+     }
+
+}
+
+void display_my_transactions(int cl, int user_id, char *transactions)
+{
+  select_transactions_by_buyer_id(&db, user_id,transactions);
 }

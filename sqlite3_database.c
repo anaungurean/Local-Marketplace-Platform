@@ -269,3 +269,249 @@ int delete_product(Database *db, int id_product, int id_user)
     }
 }
 
+void display_product(Database *db, int user_product, char *product)
+{
+        char *zErrMsg = 0;
+        int rc;
+        sqlite3_stmt *res;
+        char sql[200];
+
+        sql[0] = '\0';
+
+        snprintf(sql, sizeof(sql), "SELECT * FROM PRODUCTS WHERE ID=?");
+
+        rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
+
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+            return;
+        }
+
+        sqlite3_bind_int(res, 1, user_product);
+
+        if ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+            const char *id = sqlite3_column_text(res, 0);
+            const char *name = sqlite3_column_text(res, 1);
+            const char *category = sqlite3_column_text(res, 2);
+            const char *price = sqlite3_column_text(res, 3);
+            const char *stock = sqlite3_column_text(res, 4);
+            const char *unit_of_measure = sqlite3_column_text(res, 5);
+            const char *id_user = sqlite3_column_text(res, 6);
+            const char *created_at = sqlite3_column_text(res, 7);
+            char product[1000];
+            snprintf(product, sizeof(product), "ID: %s      NAME: %s        CATEGORY: %s       PRICE: %s       STOCK: %s       UNIT OF MEASURE: %s        CREATED AT: %s\n", id, name, category, price, stock, unit_of_measure, created_at);
+        }
+
+        if (rc != SQLITE_DONE) {
+            fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
+        }
+
+        sqlite3_finalize(res);
+}
+
+int update_product(Database *db, int id_product, const char *name, const char *category, float price, int stock, char *unit_of_measure, int id_user)
+{
+    if (check_product(db, id_product,id_user) == 0)
+        return 0;
+    else
+    {
+    char update_query[300];
+    snprintf(update_query, sizeof(update_query), "UPDATE PRODUCTS SET NAME='%s', CATEGORY='%s', PRICE='%f', STOCK='%d', UNIT_OF_MEASURE='%s' WHERE ID=%d AND ID_USER=%d;", name, category, price, stock, unit_of_measure, id_product, id_user);
+
+    int rc = sqlite3_exec(db->db, update_query, callback, 0, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to execute UPDATE query: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    printf("Product updated successfully.\n");
+    return 1;
+    }
+}
+
+void display_all_products(Database *db, char *products) 
+{
+        char *zErrMsg = 0;
+        int rc;
+        sqlite3_stmt *res;
+        char sql[200];
+
+        sql[0] = '\0';
+
+        snprintf(sql, sizeof(sql), "SELECT p.ID, p.NAME, p.CATEGORY, p.PRICE, p.STOCK, p.UNIT_OF_MEASURE, p.ID_USER, p.CREATED_AT, u.USERNAME FROM PRODUCTS p JOIN USERS u ON p.ID_USER = u.ID");
+
+        rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
+
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+            return;
+        }
+
+        while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+            const char *id = sqlite3_column_text(res, 0);
+            const char *name = sqlite3_column_text(res, 1);
+            const char *category = sqlite3_column_text(res, 2);
+            const char *price = sqlite3_column_text(res, 3);
+            const char *stock = sqlite3_column_text(res, 4);
+            const char *unit_of_measure = sqlite3_column_text(res, 5);
+            const char *id_user = sqlite3_column_text(res, 6);
+            const char *created_at = sqlite3_column_text(res, 7);
+            const char *username = sqlite3_column_text(res, 8);
+            char product[1000];
+            snprintf(product, sizeof(product), "ID: %s      NAME: %s        CATEGORY: %s       PRICE: %s       STOCK: %s       UNIT OF MEASURE: %s        CREATED AT: %s        USERNAME SELLER %s \n", id, name, category, price, stock, unit_of_measure, created_at, username);
+            strcat(products, product);
+        }
+
+        if (rc != SQLITE_DONE) {
+            fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
+        }
+
+        sqlite3_finalize(res);
+}
+
+int check_quantity_product(Database *db, int id_product, int quantity) {
+    char select_query[100];
+    snprintf(select_query, sizeof(select_query), "SELECT STOCK FROM PRODUCTS WHERE ID=%d;", id_product);
+
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    if (sqlite3_step(res) == SQLITE_ROW) {
+        int stock = sqlite3_column_int(res, 0);
+        if (stock >= quantity) {
+            sqlite3_finalize(res);
+            return 1;
+        }
+    }
+
+    sqlite3_finalize(res);
+    return 0;
+}
+    
+int update_quantity_product(Database *db, int id_product, int quantity) {
+    char update_query[100];
+    snprintf(update_query, sizeof(update_query), "UPDATE PRODUCTS SET STOCK=STOCK-%d WHERE ID=%d;", quantity, id_product);
+
+    int rc = sqlite3_exec(db->db, update_query, callback, 0, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to execute UPDATE query: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    printf("Product updated successfully.\n");
+    return 1;
+}
+
+int check_existence_product(Database *db, int id_product) {
+    char select_query[100];
+    snprintf(select_query, sizeof(select_query), "SELECT * FROM PRODUCTS WHERE ID=%d;", id_product);
+
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    if (sqlite3_step(res) == SQLITE_ROW) {
+        sqlite3_finalize(res);
+        return 1;
+    }
+    sqlite3_finalize(res);
+    return 0;
+}
+
+int select_product_price(Database *db, int id_product) {
+    char select_query[100];
+    snprintf(select_query, sizeof(select_query), "SELECT PRICE FROM PRODUCTS WHERE ID=%d;", id_product);
+
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    if (sqlite3_step(res) == SQLITE_ROW) {
+        int price = sqlite3_column_int(res, 0);
+        sqlite3_finalize(res);
+        return price;
+    }
+    sqlite3_finalize(res);
+    return 0;
+}
+
+int select_id_seller_product(Database *db, int id_product) {
+    char select_query[100];
+    snprintf(select_query, sizeof(select_query), "SELECT ID_USER FROM PRODUCTS WHERE ID=%d;", id_product);
+
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+
+    if (sqlite3_step(res) == SQLITE_ROW) {
+        int id_seller = sqlite3_column_int(res, 0);
+        sqlite3_finalize(res);
+        return id_seller;
+    }
+    sqlite3_finalize(res);
+    return 0;
+}
+
+void insert_new_transactions(Database *db, int id_product, int quantity, int id_user) {
+    char insert_query[500];
+    int total_cost = select_product_price(db, id_product) * quantity;
+    int id_seller = select_id_seller_product(db, id_product);
+
+    snprintf(insert_query, sizeof(insert_query), "INSERT INTO TRANSACTIONS (id_product, id_seller, id_buyer, total_cost, date, quantity) VALUES (%d, %d, %d, %d,  datetime('now'), %d);", id_product, id_seller, id_user, total_cost, quantity);
+
+    int rc = sqlite3_exec(db->db, insert_query, callback, 0, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to execute INSERT query: %s\n", sqlite3_errmsg(db->db));
+    }
+}
+
+void select_transactions_by_buyer_id(Database *db, int id_buyer, char *transactions)
+{
+    char select_query[1000];
+    snprintf(select_query, sizeof(select_query), "SELECT p.name AS product_name, t.total_cost, t.date AS transaction_date, t.quantity, u.username AS seller_username \
+                       FROM transactions t \
+                       JOIN products p ON t.id_product = p.id \
+                       JOIN users u ON t.id_seller = u.id \
+                       WHERE t.id_buyer = %d;", id_buyer);
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+    }
+    while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        const char *product_name = sqlite3_column_text(res, 0);
+        const char *total_cost = sqlite3_column_text(res, 1);
+        const char *transaction_date = sqlite3_column_text(res, 2);
+        const char *quantity = sqlite3_column_text(res, 3);
+        const char *seller_username = sqlite3_column_text(res, 4);
+        char transaction[1000];
+        snprintf(transaction, sizeof(transaction), "PRODUCT NAME: %s        TOTAL COST: %sEURO      QUANTITY: %s       SELLER USERNAME: %s      TRANSACTION DATE: %s\n", product_name, total_cost, quantity, seller_username, transaction_date);
+        strcat(transactions, transaction);
+    }
+   
+}
