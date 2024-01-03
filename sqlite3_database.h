@@ -30,5 +30,6 @@ int select_product_price(Database *db, int id_product);
 void insert_new_transactions(Database *db, int id_product, int quantity, int id_user);
 void display_my_transactions(int cl, int user_id, char *transactions);
 void select_transactions_by_buyer_id(Database *db, int id_buyer, char *transactions);
+void select_sales_by_seller_id(Database *db, int id_seller, char *sales);
 
 #endif

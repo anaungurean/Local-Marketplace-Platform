@@ -515,3 +515,30 @@ void select_transactions_by_buyer_id(Database *db, int id_buyer, char *transacti
     }
    
 }
+
+void select_sales_by_seller_id(Database *db, int id_seller, char *sales)
+{
+    char select_query[1000];
+    snprintf(select_query, sizeof(select_query), "SELECT p.name AS product_name, t.total_cost, t.date AS transaction_date, t.quantity, u.username AS seller_username \
+                       FROM transactions t \
+                       JOIN products p ON t.id_product = p.id \
+                       JOIN users u ON t.id_buyer = u.id \
+                       WHERE t.id_seller = %d;", id_seller);
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+    }
+    while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        const char *product_name = sqlite3_column_text(res, 0);
+        const char *total_cost = sqlite3_column_text(res, 1);
+        const char *transaction_date = sqlite3_column_text(res, 2);
+        const char *quantity = sqlite3_column_text(res, 3);
+        const char *buyer_username = sqlite3_column_text(res, 4);
+        char sale[1000];
+        snprintf(sale, sizeof(sale), "PRODUCT NAME: %s        TOTAL COST: %sEURO      QUANTITY: %s       BUYER USERNAME: %s      TRANSACTION DATE: %s\n", product_name, total_cost, quantity, buyer_username, transaction_date);
+        strcat(sales, sale);
+    }
+   
+}

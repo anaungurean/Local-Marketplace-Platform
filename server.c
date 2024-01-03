@@ -37,6 +37,7 @@ int edit_product_command(int cl, int user_id);
 void view_all_products_command(int cl, char *products);
 int buy_a_product_command(int cl, int user_id);
 void display_my_transactions(int cl, int user_id, char *transactions);
+void display_my_sales(int cl, int user_id, char *sales);
 
 int main ()
 {
@@ -273,6 +274,17 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, products);
               }
               break;
+        case 9:
+              if (strcmp(tdL->role, "Seller") == 0)
+                {
+                  char sales[9000];
+                  sales[0] = '\0';
+                  display_my_sales(tdL->cl, tdL->userId, sales);
+                  strcpy(message_to_send, sales);
+                }
+              else
+                strcpy(message_to_send, "You don't have the permissions to view your sales.");
+              break;
         default:
             strcpy(message_to_send, "Invalid command");
             break;
@@ -497,4 +509,9 @@ int buy_a_product_command(int cl, int user_id)
 void display_my_transactions(int cl, int user_id, char *transactions)
 {
   select_transactions_by_buyer_id(&db, user_id,transactions);
+}
+
+void display_my_sales(int cl, int user_id, char *sales)
+{
+  select_sales_by_seller_id(&db, user_id,sales);
 }

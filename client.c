@@ -17,7 +17,7 @@ extern int errno;
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products\n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales \n\n"
 #define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
@@ -34,6 +34,7 @@ void edit_product_command(int sd);
 void view_all_products_command(int sd);
 void buy_a_product_command(int sd);
 void view_of_purchases_command(int sd);
+void view_of_sales_command(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -159,6 +160,12 @@ void handle_command(int input_command, int sd, char *received_message)
           view_all_products_command(sd);
       else
         printf("You don't have the permissions to see all products.\n");
+      break;
+    case 9:
+      if (strcmp(role,"Seller") == 0)
+          view_of_sales_command(sd);
+      else
+        printf("You don't have the permissions to see your sales.\n");
       break;
     default:
       printf("You have selected an invalid option.\n");
@@ -682,4 +689,9 @@ void buy_a_product_command(int sd)
 void view_of_purchases_command(int sd)
 {
   printf("\nThese are the purchases that you made: \n");
+}
+
+void view_of_sales_command(int sd)
+{
+  printf("\nThese are the sales that you made: \n");
 }
