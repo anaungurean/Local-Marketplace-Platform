@@ -231,8 +231,29 @@ void display_products_by_user_id(Database *db, int user_id, char *products)
         sqlite3_finalize(res);
 }
 
+int check_product(Database *db, int id_product, int id_user) {
+    char select_query[100];
+    snprintf(select_query, sizeof(select_query), "SELECT COUNT(ID) FROM PRODUCTS WHERE ID=%d AND ID_USER=%d;", id_product, id_user);
+
+    sqlite3_stmt *stmt;
+    int result = 0;
+
+    if (sqlite3_prepare_v2(db->db, select_query, -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            result = sqlite3_column_int(stmt, 0);
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return result;
+}
+
 int delete_product(Database *db, int id_product, int id_user)
 {
+    if (check_product(db, id_product,id_user) == 0)
+        return 0;
+    else
+    {
     char delete_query[100];
     snprintf(delete_query, sizeof(delete_query), "DELETE FROM PRODUCTS WHERE ID=%d AND ID_USER=%d;", id_product, id_user);
 
@@ -245,4 +266,6 @@ int delete_product(Database *db, int id_product, int id_user)
 
     printf("Product deleted successfully.\n");
     return 1;
+    }
 }
+

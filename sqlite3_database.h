@@ -19,4 +19,5 @@ void get_role_user(Database *db, int userId, char *role);
 int add_new_product(Database *db, const char *name, const char *category, float price, int stock, char *unit_of_measure, int id_user);
 void display_products_by_user_id(Database *db, int user_id, char *products);
 int delete_product(Database *db, int id_product, int id_user);
+int check_product(Database *db, int id_product, int id_user);
 #endif

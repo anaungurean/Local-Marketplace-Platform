@@ -34,7 +34,7 @@ int login_command(int cl);
 int register_command(int cl);
 void add_product_command(int cl, int user_id);
 void view_my_products_command(int cl, int user_id, char *products);
-void delete_product_command(int cl, int user_id, char *message_to_send);
+int delete_product_command(int cl, int user_id);
 
 int main ()
 {
@@ -177,8 +177,6 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
               {
               tdL->userId = userId;
               get_role_user(&db, tdL->userId, tdL->role);
-              printf("User id: %d\n", tdL->userId);
-              printf("User role: %s\n", tdL->role);
               if (strcmp(tdL->role, "Seller") == 0)
                 strcpy(message_to_send, "You are logged in as a Seller!");
               else
@@ -213,11 +211,15 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
         case 6 :
             if (strcmp(tdL->role, "Seller") == 0)
               {
-                view_my_products_command(tdL->cl, tdL->userId, message_to_send);
-                delete_product_command(tdL->cl, tdL->userId, message_to_send);
+                ok = delete_product_command(tdL->cl, tdL->userId);
+                if (ok == 1)
+                    strcpy(message_to_send, "You have deleted the product.");
+                else
+                  strcpy(message_to_send, "You don't have the permissions to delete this product.");
               }
             else
               strcpy(message_to_send, "You don't have the permissions to delete the products.");
+            break;
         case 7:
             if (strcmp(tdL->role, "Seller") == 0)
               {
@@ -320,12 +322,6 @@ void add_product_command(int cl, int user_id)
       perror("Error reading unit_of_measure from client.\n");
     }
 
-    printf("Name: %s\n", name);
-    printf("Category: %s\n", category);
-    printf("Price: %s\n", price);
-    printf("Stock: %s\n", stock);
-    printf("Unit of measure: %s\n", unit_of_measure);
-
     if (add_new_product(&db, name, category, atof(price), atoi(stock), unit_of_measure, user_id) == 1)
       printf("Product added successfully.\n");
     else
@@ -338,7 +334,8 @@ void view_my_products_command(int cl, int user_id, char *products)
   printf("%s\n", products);
 }
 
-void delete_product_command(int cl, int user_id, char *message_to_send)
+
+int delete_product_command(int cl, int user_id)
 {
   char id[100];
 
@@ -348,7 +345,7 @@ void delete_product_command(int cl, int user_id, char *message_to_send)
   }
 
   if (delete_product(&db, atoi(id), user_id) == 1)
-    strcpy(message_to_send, "Product deleted successfully.");
-  else
-    strcpy(message_to_send, "You don't have the right to delete this product.");
+    return 1;
+  else 
+    return 0;
 }

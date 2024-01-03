@@ -112,9 +112,6 @@ int read_commands(int sd)
   return 0;
 }
 
-
-
-
 void handle_command(int input_command, int sd)
 {
   switch(input_command)
@@ -145,15 +142,15 @@ void handle_command(int input_command, int sd)
       if (strcmp(role,"Seller") == 0)
           delete_product_command(sd);
       else
-        printf("You don't have the permissions to buy a product.\n");
+        printf("You don't have the permissions to delete a product.\n");
       break;
     }
     case 7:
     {
       if (strcmp(role,"Seller") == 0)
-        view_my_products_command();
+          view_my_products_command();
       else
-        printf("You don't have the permissions to delete a product.\n");
+        printf("You don't have the permissions to buy a product.\n");
       break;
     }
     default:
@@ -426,7 +423,6 @@ void add_product_command(int sd)
  void view_my_products_command()
  {
    printf("\nYou have selected view my products option.\n");
- 
  }
 
 
@@ -437,7 +433,7 @@ void delete_product_command(int sd)
  
   do
   {
-    printf("\nChoose the id of the product you want to delete: ");
+    printf("\nType the id of the product you want to delete: ");
     fflush(stdout);
     fgets(id_product, sizeof(id_product), stdin);
     if (atoi(id_product) <= 0)
