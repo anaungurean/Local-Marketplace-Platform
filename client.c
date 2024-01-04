@@ -17,8 +17,8 @@ extern int errno;
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10.See the best sellers. \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10.See the best seller.  \n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10. See the best sellers. \n 11. See the most sold products. 12. LogOut  \n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10. See the best seller.\n 11. See the most sold products. 12. LogOut  \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
@@ -29,16 +29,18 @@ void set_role(char *received_message);
 void add_product_command(int sd);
 void view_my_products_command();
 void delete_product_command(int sd);
-void display_info_own_product(int sd);
+void display_info_own_product_command(int sd);
 void edit_product_command(int sd);
 void view_all_products_command(int sd);
 void buy_a_product_command(int sd);
 void view_of_purchases_command(int sd);
 void view_of_sales_command(int sd);
-void find_product_by_category(int sd);
-void find_product_by_price(int sd);
+void find_product_by_category_command(int sd);
+void find_product_by_price_command(int sd);
 void return_a_product_command(int sd);
-void view_the_best_seller(int sd);
+void view_the_best_seller_command(int sd);
+void view_the_most_sold_products_command(int sd);
+void logout_command(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -144,35 +146,44 @@ void handle_command(int input_command, int sd, char *received_message)
     case 5:
       if (strcmp(role, "Seller") == 0)  
           edit_product_command(sd);
-      else
+      else if (strcmp(role,"Buyer") == 0)
           buy_a_product_command(sd);
       break;
     case 6:
       if (strcmp(role,"Seller") == 0)
           delete_product_command(sd);
-      else
+      else if (strcmp(role,"Buyer") == 0)
           view_of_purchases_command(sd);
       break;
     case 7:
       if (strcmp(role,"Seller") == 0)
           view_my_products_command();
-      else
-        find_product_by_category(sd);
+      else if (strcmp(role,"Buyer") == 0)
+        find_product_by_category_command(sd);
       break;
     case 8:
       if (strcmp(role,"Seller") == 0)
           view_all_products_command(sd);
-      else
-        find_product_by_price(sd);
+      else if (strcmp(role,"Buyer") == 0)
+        find_product_by_price_command(sd);
       break;
     case 9:
       if (strcmp(role,"Seller") == 0)
           view_of_sales_command(sd);
-      else
+      else if (strcmp(role,"Buyer") == 0)
          return_a_product_command(sd);
       break;
     case 10:
-        view_the_best_seller(sd);
+        if (strlen(role) > 0)
+          view_the_best_seller_command(sd);
+        break;
+    case 11:
+        if (strlen(role) > 0)
+          view_the_most_sold_products_command(sd);
+        break;
+    case 12:
+        if (strlen(role) > 0)
+          logout_command(sd);
         break;
     default:
       printf("You have selected an invalid option.\n");
@@ -469,7 +480,7 @@ void delete_product_command(int sd)
 }
 
 
-void display_info_own_product(int sd)
+void display_info_own_product_command(int sd)
 {
   char id_product[100];
   do{
@@ -703,7 +714,7 @@ void view_of_sales_command(int sd)
   printf("\nThese are the sales that you made: \n");
 }
 
-void find_product_by_category(int sd)
+void find_product_by_category_command(int sd)
 {
   char category[100];
   int ok = 0;
@@ -762,7 +773,7 @@ void find_product_by_category(int sd)
       }
 }
 
-void find_product_by_price(int sd)
+void find_product_by_price_command(int sd)
 {
   char min_price[100];
   char max_price[100];
@@ -826,7 +837,19 @@ void return_a_product_command(int sd)
       }
 }
 
-void view_the_best_seller(int sd)
+void view_the_best_seller_command(int sd)
 {
   printf("\nThese are the best sellers: \n");
+}
+
+void view_the_most_sold_products_command(int sd)
+{
+  printf("\nThese are the most sold products: \n");
+}
+
+void logout_command(int sd)
+{
+  printf("\nYou have selected logout option.\n");
+  strcpy(role,"");
+
 }

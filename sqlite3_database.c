@@ -763,3 +763,29 @@ void select_the_best_seller(Database *db, char* best_sellers)
         strcat(best_sellers, seller);
     }
 }
+
+void select_the_most_sold_product(Database *db, char* most_sold_products)
+{
+    char select_query[1000];
+    snprintf(select_query, sizeof(select_query), "SELECT p.name, SUM(t.quantity) \
+                       FROM transactions t \
+                       JOIN products p ON t.id_product = p.id \
+                       GROUP BY p.name \
+                       ORDER BY 2 DESC \
+                       LIMIT 2;");
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+    }
+    int i=0;
+    while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        i++;
+        const char *product_name = sqlite3_column_text(res, 0);
+        const char *total_quantity_sold = sqlite3_column_text(res, 1);
+        char product[1000];
+        snprintf(product, sizeof(product), "NUMBER: %d    PRODUCT NAME: %s        TOTAL QUANTITY SOLD: %s\n", i, product_name, total_quantity_sold);
+        strcat(most_sold_products, product);
+    }
+}

@@ -39,4 +39,5 @@ int select_quantity_from_transaction(Database *db, int id_transaction);
 void delete_transaction(Database *db, int id_transaction);
 void update_quantity_product_after_return(Database *db, int id_transaction);
 void select_the_best_seller(Database *db, char* best_seller);
+void select_the_most_sold_product(Database *db, char* most_sold_products);
 #endif

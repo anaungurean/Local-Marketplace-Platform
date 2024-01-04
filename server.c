@@ -42,6 +42,9 @@ void view_products_filtred_by_category_command(Database *db, int cl, char *produ
 void view_products_filtred_by_price_command(Database *db, int cl, char *products_filtred_by_price);
 void return_a_product_command(int cl, int user_id, char *message_to_send);
 void display_the_best_seller(char *message_to_send);
+void display_the_most_sold_product_command(char *message_to_send);
+void logout_command(char *message_to_send, int user_id, char *role);
+
 
 int main ()
 {
@@ -179,6 +182,10 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
     switch(input_command)
     { int ok;
         case 1:
+            if (strlen(tdL->role) > 0)
+              strcpy(message_to_send, "You are already logged in.");
+            else
+            {
             int userId = login_command(tdL->cl);
             if(userId != -1)
               {
@@ -191,6 +198,7 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
               }
             else
               strcpy(message_to_send, "The username or the password is incorrect.Please try again to log in.");
+            }
             break;
         case 2:
             ok = register_command(tdL->cl);
@@ -212,13 +220,15 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 add_product_command(tdL->cl, tdL->userId);
                 strcpy(message_to_send, "You have added a new product.");
               }
-            else
+            else if (strcmp(tdL->role, "Buyer") == 0)
               {
                 char products[9000];
                 products[0] = '\0';
                 view_all_products_command(tdL->cl,products);
                 strcpy(message_to_send, products);
               }
+            else 
+              strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 5 :
              if (strcmp(tdL->role, "Seller") == 0)
@@ -229,17 +239,18 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                   else
                     strcpy(message_to_send, "You don't have the permissions to edit this product.");
                 }
-             else
+             else if (strcmp(tdL->role, "Buyer") == 0)
                  {
                   ok = buy_a_product_command(tdL->cl, tdL->userId);
                   if (ok == -3)
                     strcpy(message_to_send, "The product doesn't exist.");
                   else if (ok == -2)
                      strcpy(message_to_send, "There's not enough quantity of this product.");
-                  else {
-                    sprintf(message_to_send, "The total cost is: %d euro. Thank you for your purchase.", ok);
-                     
+                  else 
+                    sprintf(message_to_send, "The total cost is: %d euro. Thank you for your purchase.", ok); 
                  }
+              else 
+                strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 6 :
             if (strcmp(tdL->role, "Seller") == 0)
@@ -250,13 +261,14 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 else
                   strcpy(message_to_send, "You don't have the permissions to delete this product.");
               }
-            else
+            else if (strcmp(tdL->role, "Buyer") == 0)
             {   char transactions[9000];
                 transactions[0] = '\0';
                 display_my_transactions_command(tdL->cl, tdL->userId, transactions);
                 strcpy(message_to_send, transactions);
             }
-
+            else
+              strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 7:
             if (strcmp(tdL->role, "Seller") == 0)
@@ -266,13 +278,15 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 view_my_products_command(tdL->cl, tdL->userId, products);
                 strcpy(message_to_send, products);
               }
-            else
+            else if (strcmp(tdL->role, "Buyer") == 0)
               {
                 char products_by_category[9000];
                 products_by_category[0] = '\0';
                 view_products_filtred_by_category_command(&db, tdL->cl, products_by_category);
                 strcpy(message_to_send, products_by_category);
               }
+            else
+              strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 8:
               if (strcmp(tdL->role, "Seller") == 0)
@@ -282,13 +296,15 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 view_all_products_command(tdL->cl,products);
                 strcpy(message_to_send, products);
               }
-              else
+              else if (strcmp(tdL->role, "Buyer") == 0)
               {
                 char products_filtred_by_price[9000];
                 products_filtred_by_price[0] = '\0';
                 view_products_filtred_by_price_command(&db, tdL->cl, products_filtred_by_price);
                 strcpy(message_to_send, products_filtred_by_price);
               }
+              else
+                strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 9:
               if (strcmp(tdL->role, "Seller") == 0)
@@ -298,21 +314,35 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                   display_my_sales_command(tdL->cl, tdL->userId, sales);
                   strcpy(message_to_send, sales);
                 }
-              else
-                {
+              else if (strcmp(tdL->role, "Buyer") == 0)
                   return_a_product_command(tdL->cl, tdL->userId, message_to_send);
-                  
-                }
+              else
+                  strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 10:
-              display_the_best_seller(message_to_send);
+              if (strlen(tdL->role) > 0)
+                display_the_best_seller(message_to_send);
+              else
+                strcpy(message_to_send, "You need to log in to have access to this command.");
+              break;
+        case 11:
+              if (strlen(tdL->role) > 0)
+                display_the_most_sold_product_command(message_to_send);
+              else 
+                strcpy(message_to_send, "You need to log in to have access to this command.");
+              break;
+        case 12:
+              if (strlen(tdL->role) > 0)
+                logout_command(message_to_send, tdL->userId, tdL->role);
+              else
+                strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         default:
             strcpy(message_to_send, "Invalid command");
             break;
     }
 }
-}
+
       
 
 int login_command(int cl)
@@ -602,4 +632,20 @@ void display_the_best_seller(char *message_to_send)
   best_sellers[0] = '\0';
   select_the_best_seller(&db, best_sellers);
   strcpy(message_to_send, best_sellers);
+}
+
+void display_the_most_sold_product_command(char *message_to_send)
+{
+  char most_sold_product[9000];
+  most_sold_product[0] = '\0';
+  select_the_most_sold_product(&db, most_sold_product);
+  strcpy(message_to_send, most_sold_product);
+}
+
+void logout_command(char *message_to_send, int user_id, char *role)
+{
+  strcpy(message_to_send, "You have been logged out. If you want to have acces again to functions, please log in again.");
+  user_id = -1;
+  strcpy(role, "");
+  
 }
