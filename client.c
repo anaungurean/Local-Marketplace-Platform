@@ -18,7 +18,7 @@ int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
 #define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
@@ -35,6 +35,9 @@ void view_all_products_command(int sd);
 void buy_a_product_command(int sd);
 void view_of_purchases_command(int sd);
 void view_of_sales_command(int sd);
+void find_product_by_category(int sd);
+void find_product_by_price(int sd);
+void return_a_product_command(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -153,19 +156,19 @@ void handle_command(int input_command, int sd, char *received_message)
       if (strcmp(role,"Seller") == 0)
           view_my_products_command();
       else
-        printf("You don't have the permissions to buy a product.\n");
+        find_product_by_category(sd);
       break;
     case 8:
       if (strcmp(role,"Seller") == 0)
           view_all_products_command(sd);
       else
-        printf("You don't have the permissions to see all products.\n");
+        find_product_by_price(sd);
       break;
     case 9:
       if (strcmp(role,"Seller") == 0)
           view_of_sales_command(sd);
       else
-        printf("You don't have the permissions to see your sales.\n");
+         return_a_product_command(sd);
       break;
     default:
       printf("You have selected an invalid option.\n");
@@ -694,4 +697,127 @@ void view_of_purchases_command(int sd)
 void view_of_sales_command(int sd)
 {
   printf("\nThese are the sales that you made: \n");
+}
+
+void find_product_by_category(int sd)
+{
+  char category[100];
+  int ok = 0;
+  do{
+        printf("\nChoose the category:\n");
+        printf("1. Fruits \n");
+        printf("2. Vegetables \n");
+        printf("3. Food \n");
+        printf("4. Drinks \n");
+        printf("5. Clothes \n");
+        printf("6. Electronics \n");
+        printf("7. Books \n");
+        printf("8. Other \n");
+        printf("Enter the category: ");
+        fflush(stdout);
+        fgets(category, sizeof(category), stdin);
+
+        if (atoi(category) < 1 || atoi(category) > 8)
+          { printf("Invalid category. Please choose a number between 1 and 8.\n");
+            ok = 1;
+          }
+        else{
+          switch(atoi(category))
+          {
+            case 1:
+              strcpy(category,"Fruits");
+              break;
+            case 2:
+              strcpy(category,"Vegetables");
+              break;
+            case 3:
+              strcpy(category,"Food");
+              break;
+            case 4:
+            strcpy(category,"Drinks");
+            break;
+            case 5:
+            strcpy(category,"Clothes");
+            break;
+            case 6:
+            strcpy(category,"Electronics");
+            break;
+            case 7:
+            strcpy(category,"Books");
+            break;
+            case 8:
+            strcpy(category,"Other");
+            break;
+          }
+        }
+      }while(ok);
+
+      if(write(sd, category, sizeof(category)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+}
+
+void find_product_by_price(int sd)
+{
+  char min_price[100];
+  char max_price[100];
+  int ok = 0;
+  do{
+        ok = 0;
+        printf("\nEnter the minimum price: ");
+        fflush(stdout);
+        fgets(min_price, sizeof(min_price), stdin);
+        if (atoi(min_price) <= 0)
+          {printf("Invalid price.\n");
+            ok = 1;
+          }
+      }
+  while(ok);
+
+  do{
+        ok = 0;
+        printf("\nEnter the maximum price: ");
+        fflush(stdout);
+        fgets(max_price, sizeof(max_price), stdin);
+        if (atoi(max_price) <= 0)
+          {printf("Invalid price.\n");
+            ok = 1;
+          }
+      }
+  while(ok);
+
+  if(write(sd, min_price, sizeof(min_price)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }   
+  
+  if(write(sd, max_price, sizeof(max_price)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  
+}
+
+void return_a_product_command(int sd)
+{
+  char id_transaction[100];
+  printf("\nYou have selected return a product option.\n");
+  printf("\nAttention you can only return a product while 14 days after transaction. \n");
+  int ok = 0;
+  do{
+    printf("\nEnter the id of the transaction you want to return: ");
+    fflush(stdout);
+    fgets(id_transaction, sizeof(id_transaction), stdin);
+    if (atoi(id_transaction) <= 0)
+        {printf("Invalid id.\n");
+          ok = 1;
+        }
+  }
+  while(ok);
+
+  if(write(sd, id_transaction, sizeof(id_transaction)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
 }

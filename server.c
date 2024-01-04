@@ -36,8 +36,11 @@ void check_if_user_can_edit_product(int cl, int user_id, char *info, char *id_pr
 int edit_product_command(int cl, int user_id);
 void view_all_products_command(int cl, char *products);
 int buy_a_product_command(int cl, int user_id);
-void display_my_transactions(int cl, int user_id, char *transactions);
-void display_my_sales(int cl, int user_id, char *sales);
+void display_my_transactions_command(int cl, int user_id, char *transactions);
+void display_my_sales_command(int cl, int user_id, char *sales);
+void view_products_filtred_by_category_command(Database *db, int cl, char *products_by_category);
+void view_products_filtred_by_price_command(Database *db, int cl, char *products_filtred_by_price);
+void return_a_product_command(int cl, int user_id, char *message_to_send);
 
 int main ()
 {
@@ -249,7 +252,7 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
             else
             {   char transactions[9000];
                 transactions[0] = '\0';
-                display_my_transactions(tdL->cl, tdL->userId, transactions);
+                display_my_transactions_command(tdL->cl, tdL->userId, transactions);
                 strcpy(message_to_send, transactions);
             }
 
@@ -263,7 +266,12 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, products);
               }
             else
-               strcpy(message_to_send, "You don't have the permissions to view your products.");
+              {
+                char products_by_category[9000];
+                products_by_category[0] = '\0';
+                view_products_filtred_by_category_command(&db, tdL->cl, products_by_category);
+                strcpy(message_to_send, products_by_category);
+              }
             break;
         case 8:
               if (strcmp(tdL->role, "Seller") == 0)
@@ -273,17 +281,27 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 view_all_products_command(tdL->cl,products);
                 strcpy(message_to_send, products);
               }
+              else
+              {
+                char products_filtred_by_price[9000];
+                products_filtred_by_price[0] = '\0';
+                view_products_filtred_by_price_command(&db, tdL->cl, products_filtred_by_price);
+                strcpy(message_to_send, products_filtred_by_price);
+              }
               break;
         case 9:
               if (strcmp(tdL->role, "Seller") == 0)
                 {
                   char sales[9000];
                   sales[0] = '\0';
-                  display_my_sales(tdL->cl, tdL->userId, sales);
+                  display_my_sales_command(tdL->cl, tdL->userId, sales);
                   strcpy(message_to_send, sales);
                 }
               else
-                strcpy(message_to_send, "You don't have the permissions to view your sales.");
+                {
+                  return_a_product_command(tdL->cl, tdL->userId, message_to_send);
+                  
+                }
               break;
         default:
             strcpy(message_to_send, "Invalid command");
@@ -506,12 +524,71 @@ int buy_a_product_command(int cl, int user_id)
 
 }
 
-void display_my_transactions(int cl, int user_id, char *transactions)
+void display_my_transactions_command(int cl, int user_id, char *transactions)
 {
   select_transactions_by_buyer_id(&db, user_id,transactions);
 }
 
-void display_my_sales(int cl, int user_id, char *sales)
+void display_my_sales_command(int cl, int user_id, char *sales)
 {
   select_sales_by_seller_id(&db, user_id,sales);
+}
+
+void view_products_filtred_by_category_command(Database *db, int cl, char *products_by_category)
+{
+  char category[100];
+
+  if (read(cl, category, sizeof(category)) <= 0)
+  {
+    perror("Error reading category from client.\n");
+  }
+
+  select_products_filtred_by_category(db, category, products_by_category);
+}
+
+void view_products_filtred_by_price_command(Database *db, int cl, char *products_filtred_by_price)
+{
+  char min_price[100];
+  char max_price[100];
+
+  if (read(cl, min_price, sizeof(min_price)) <= 0)
+  {
+    perror("Error reading price from client.\n");
+  }
+
+  if (read(cl, max_price, sizeof(max_price)) <= 0)
+  {
+    perror("Error reading price from client.\n");
+  }
+
+  select_products_filtred_by_price(db, atoi(min_price), atoi(max_price), products_filtred_by_price);
+}
+
+
+void return_a_product_command(int cl, int user_id, char *message_to_send)
+{
+  char id_transaction[100];
+
+  if (read(cl, id_transaction, sizeof(id_transaction)) <= 0)
+  {
+    perror("Error reading id_transaction from client.\n");
+  }
+
+  if(check_existence_transaction_made_by_user(&db, atoi(id_transaction), user_id) == 0)
+    {
+        strcpy(message_to_send, "Invalid transaction id. You don't made this transaction. Please, check the id and try again.");
+    }
+  else if (check_valid_transaction(&db, atoi(id_transaction)) == 0)
+    {
+        strcpy(message_to_send, "Sorry, but the deadline for return has passed.");
+    }
+  else 
+  {
+
+        update_quantity_product_after_return(&db, atoi(id_transaction));
+        delete_transaction(&db, atoi(id_transaction));
+        strcpy(message_to_send, "The transaction was valid. The product has been  succesfully returned.");
+  }
+
+ 
 }

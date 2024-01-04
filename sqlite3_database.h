@@ -31,5 +31,11 @@ void insert_new_transactions(Database *db, int id_product, int quantity, int id_
 void display_my_transactions(int cl, int user_id, char *transactions);
 void select_transactions_by_buyer_id(Database *db, int id_buyer, char *transactions);
 void select_sales_by_seller_id(Database *db, int id_seller, char *sales);
-
+void select_products_filtred_by_category(Database *db, char *category, char *products);
+void select_products_filtred_by_price(Database *db, int min_price, int max_price, char *products);
+int check_existence_transaction_made_by_user(Database *db, int id_transaction, int id_buyer);
+int check_valid_transaction(Database *db, int id_transaction);
+int select_quantity_from_transaction(Database *db, int id_transaction);
+void delete_transaction(Database *db, int id_transaction);
+void update_quantity_product_after_return(Database *db, int id_transaction);
 #endif
