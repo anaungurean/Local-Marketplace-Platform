@@ -736,3 +736,30 @@ void delete_transaction(Database *db, int id_transaction)
 
     printf("Transaction deleted successfully.\n");
 }
+
+
+void select_the_best_seller(Database *db, char* best_sellers)
+{
+    char select_query[1000];
+    snprintf(select_query, sizeof(select_query), "SELECT u.username, SUM(t.total_cost) AS total_earned \
+                       FROM transactions t \
+                       JOIN users u ON t.id_seller = u.id \
+                       GROUP BY u.username \
+                       ORDER BY total_earned DESC \
+                       LIMIT 2;");
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+    }
+    int i=0;
+    while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        i++;
+        const char *seller_username = sqlite3_column_text(res, 0);
+        const char *total_earned = sqlite3_column_text(res, 1);
+        char seller[1000];
+        snprintf(seller, sizeof(seller), "NUMBER: %d    SELLER USERNAME: %s        TOTAL EARNED: %sEURO\n", i, seller_username, total_earned);
+        strcat(best_sellers, seller);
+    }
+}

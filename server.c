@@ -41,6 +41,7 @@ void display_my_sales_command(int cl, int user_id, char *sales);
 void view_products_filtred_by_category_command(Database *db, int cl, char *products_by_category);
 void view_products_filtred_by_price_command(Database *db, int cl, char *products_filtred_by_price);
 void return_a_product_command(int cl, int user_id, char *message_to_send);
+void display_the_best_seller(char *message_to_send);
 
 int main ()
 {
@@ -303,6 +304,9 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                   
                 }
               break;
+        case 10:
+              display_the_best_seller(message_to_send);
+              break;
         default:
             strcpy(message_to_send, "Invalid command");
             break;
@@ -564,7 +568,6 @@ void view_products_filtred_by_price_command(Database *db, int cl, char *products
   select_products_filtred_by_price(db, atoi(min_price), atoi(max_price), products_filtred_by_price);
 }
 
-
 void return_a_product_command(int cl, int user_id, char *message_to_send)
 {
   char id_transaction[100];
@@ -590,5 +593,13 @@ void return_a_product_command(int cl, int user_id, char *message_to_send)
         strcpy(message_to_send, "The transaction was valid. The product has been  succesfully returned.");
   }
 
- 
+}
+
+
+void display_the_best_seller(char *message_to_send)
+{
+  char best_sellers[9000];
+  best_sellers[0] = '\0';
+  select_the_best_seller(&db, best_sellers);
+  strcpy(message_to_send, best_sellers);
 }

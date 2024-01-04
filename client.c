@@ -17,8 +17,8 @@ extern int errno;
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10.See the best sellers. \n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10.See the best seller.  \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
@@ -38,6 +38,7 @@ void view_of_sales_command(int sd);
 void find_product_by_category(int sd);
 void find_product_by_price(int sd);
 void return_a_product_command(int sd);
+void view_the_best_seller(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -170,6 +171,9 @@ void handle_command(int input_command, int sd, char *received_message)
       else
          return_a_product_command(sd);
       break;
+    case 10:
+        view_the_best_seller(sd);
+        break;
     default:
       printf("You have selected an invalid option.\n");
       break;
@@ -820,4 +824,9 @@ void return_a_product_command(int sd)
       {
         perror("[client]Eroare la write() spre server.\n");
       }
+}
+
+void view_the_best_seller(int sd)
+{
+  printf("\nThese are the best sellers: \n");
 }
