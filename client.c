@@ -17,8 +17,8 @@ extern int errno;
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10. See the best sellers. \n 11. See the most sold products. 12. LogOut  \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10. See the best seller.\n 11. See the most sold products. 12. LogOut  \n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10. See the best sellers. \n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10. See the best seller.\n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
@@ -41,6 +41,9 @@ void return_a_product_command(int sd);
 void view_the_best_seller_command(int sd);
 void view_the_most_sold_products_command(int sd);
 void logout_command(int sd);
+void complete_profile_command(int sd);
+int validate_phone_number(char *phone_number);
+void display_profile_user_command(int sd);
 
 int main (int argc, char *argv[])
 {
@@ -96,12 +99,11 @@ int read_commands(int sd)
   read (0, buf, sizeof(buf));
   input_command=atoi(buf);
   
-  /* trimiterea comenzii la server */
   if (write (sd,&input_command,sizeof(int)) <= 0)
-    {
-      perror ("[client]Eroare la write() spre server.\n");
-      return errno;
-    }
+      {
+        perror ("[client]Eroare la write() spre server.\n");
+        return errno;
+      }
  
   handle_command(input_command, sd, received_message);
   /* citirea raspunsului dat de server 
@@ -182,6 +184,14 @@ void handle_command(int input_command, int sd, char *received_message)
           view_the_most_sold_products_command(sd);
         break;
     case 12:
+        if (strlen(role) > 0)
+          complete_profile_command(sd);
+        break;
+    case 13:
+        if (strlen(role) > 0)
+          display_profile_user_command(sd);
+        break;
+    case 14:
         if (strlen(role) > 0)
           logout_command(sd);
         break;
@@ -420,11 +430,6 @@ void add_product_command(int sd)
       stock[strcspn(stock, "\n")] = '\0';
       unit_of_measure[strcspn(unit_of_measure, "\n")] = '\0';
 
-      printf("Name: %s\n", name);
-      printf("Category: %s\n", category);
-      printf("Price: %s\n", price);
-      printf("Stock: %s\n", stock);
-      printf("Unit of measure: %s\n", unit_of_measure);
       
       if(write(sd, name, sizeof(name)) <= 0)
       {
@@ -852,4 +857,99 @@ void logout_command(int sd)
   printf("\nYou have selected logout option.\n");
   strcpy(role,"");
 
+}
+
+void complete_profile_command(int sd)
+{
+  printf("\nYou have selected complete profile option.\n");
+  printf("\nThese information will be visible to others users: \n");
+  char first_name[100];
+  char last_name[100];
+  char phone_number[100];
+  char description[1000];
+  int ok = 0;
+
+  printf("\nEnter your first name: ");
+  fflush(stdout);
+  fgets(first_name, sizeof(first_name), stdin);
+ 
+  printf("\nEnter your last name: ");
+  fflush(stdout);
+  fgets(last_name, sizeof(last_name), stdin);
+
+  do{
+  ok = 0;
+  printf("\nEnter your phone number: ");
+  fflush(stdout);
+  fgets(phone_number, sizeof(phone_number), stdin);
+  phone_number[strcspn(phone_number, "\n")] = '\0';
+  if (validate_phone_number(phone_number) == 0)
+     { printf("Invalid phone number.\n");
+        ok = 1;
+      }
+
+  }while(ok);
+
+  printf("\nEnter a description about you: ");
+  fflush(stdout);
+  fgets(description, sizeof(description), stdin);
+
+  first_name[strcspn(first_name, "\n")] = '\0';
+  last_name[strcspn(last_name, "\n")] = '\0';
+  description[strcspn(description, "\n")] = '\0';
+
+  if(write(sd, first_name, sizeof(first_name)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  
+  if(write(sd, last_name, sizeof(last_name)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  
+  if(write(sd, phone_number, sizeof(phone_number)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+  
+  if(write(sd, description, sizeof(description)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
+
+}
+
+int validate_phone_number(char *phone_number)
+{
+  int i;
+  if (strlen(phone_number) != 10)
+      return 0;
+
+  for(i = 0; i < strlen(phone_number); i++)
+  { 
+    if (i==0 && phone_number[i] != '0')
+      return 0;
+    
+    if (i==1 && phone_number[i] != '7')
+      return 0;
+
+    if(!isdigit(phone_number[i]))
+      return 0;
+  }
+  return 1;
+}
+
+void display_profile_user_command(int sd)
+{
+  char username[100];
+  printf("\nEnter the username of the user you want to see the profile: ");
+  fflush(stdout);
+  fgets(username, sizeof(username), stdin);
+  username[strcspn(username, "\n")] = '\0';
+
+  if(write(sd, username, sizeof(username)) <= 0)
+      {
+        perror("[client]Eroare la write() spre server.\n");
+      }
 }

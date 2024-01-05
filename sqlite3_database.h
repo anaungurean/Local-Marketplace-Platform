@@ -40,4 +40,6 @@ void delete_transaction(Database *db, int id_transaction);
 void update_quantity_product_after_return(Database *db, int id_transaction);
 void select_the_best_seller(Database *db, char* best_seller);
 void select_the_most_sold_product(Database *db, char* most_sold_products);
+int add_profile_information(Database *db, int id_user, char* first_name, char* last_name, char *description, char *phone_number);
+void select_profile_information_based_on_username(Database *db, char *username, char *profile_information);
 #endif

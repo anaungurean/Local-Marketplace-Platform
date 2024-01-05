@@ -789,3 +789,41 @@ void select_the_most_sold_product(Database *db, char* most_sold_products)
         strcat(most_sold_products, product);
     }
 }
+
+int add_profile_information(Database *db, int id_user, char *first_name, char *last_name, char *description, char *phone_number)
+{
+    char update_query[300];
+    snprintf(update_query, sizeof(update_query), "UPDATE USERS SET FIRST_NAME='%s', LAST_NAME='%s', DESCRIPTION='%s', PHONE_NUMBER='%s' WHERE ID=%d;", first_name, last_name, description, phone_number, id_user);
+
+    int rc = sqlite3_exec(db->db, update_query, callback, 0, 0);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to execute UPDATE query: %s\n", sqlite3_errmsg(db->db));
+        return 0;
+    }
+    return 1;
+
+}
+
+void select_profile_information_based_on_username(Database *db, char* username, char* profile_information)
+{
+    char select_query[1000];
+    snprintf(select_query, sizeof(select_query), "SELECT FIRST_NAME, LAST_NAME, DESCRIPTION, PHONE_NUMBER \
+                       FROM users \
+                       WHERE username = '%s';", username);
+    int rc;
+    sqlite3_stmt *res;
+    rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
+    }
+    while ((rc = sqlite3_step(res)) == SQLITE_ROW) {
+        const char *first_name = sqlite3_column_text(res, 0);
+        const char *last_name = sqlite3_column_text(res, 1);
+        const char *description = sqlite3_column_text(res, 2);
+        const char *phone_number = sqlite3_column_text(res, 3);
+        char profile[1000];
+        snprintf(profile, sizeof(profile), "FIRST NAME: %s    LAST NAME: %s        DESCRIPTION: %s        PHONE NUMBER: %s\n", first_name, last_name, description, phone_number);
+        strcat(profile_information, profile);
+    }
+}

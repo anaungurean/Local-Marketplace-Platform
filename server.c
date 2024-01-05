@@ -44,7 +44,8 @@ void return_a_product_command(int cl, int user_id, char *message_to_send);
 void display_the_best_seller(char *message_to_send);
 void display_the_most_sold_product_command(char *message_to_send);
 void logout_command(char *message_to_send, int user_id, char *role);
-
+int complete_profile_command(int cl, int user_id);
+void display_profile_information_command(int cl, char *profile_info);
 
 int main ()
 {
@@ -161,6 +162,7 @@ void raspunde(void *arg)
 			  perror ("Eroare la read() de la client.\n");
 
 			}
+      
   char message_to_send[9000];
   handle_command(input_command, message_to_send, &tdL);
   printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.idThread, message_to_send);
@@ -333,13 +335,35 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
               break;
         case 12:
               if (strlen(tdL->role) > 0)
+              {
+                if (complete_profile_command(tdL->cl, tdL->userId) == 1)
+                  strcpy(message_to_send, "Your profile was updated. Thank you!");
+                else
+                  strcpy(message_to_send, "Sorry, but your profile was not updated.Please, try again!");
+              }
+              else
+                strcpy(message_to_send, "You need to log in to have access to this command.");
+              break;
+        case 13:
+              if (strlen(tdL->role) > 0)
+                  {
+                    char profile_info[9000];
+                    profile_info[0] = '\0';
+                    display_profile_information_command(tdL->cl, profile_info);
+                    strcpy(message_to_send, profile_info);
+                  }
+              else
+                strcpy(message_to_send, "You need to log in to have access to this command.");
+              break;
+        case 14:
+              if (strlen(tdL->role) > 0)
                 logout_command(message_to_send, tdL->userId, tdL->role);
               else
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         default:
-            strcpy(message_to_send, "Invalid command");
-            break;
+              strcpy(message_to_send,"The command you typed is invalid. Try again.");
+              break;
     }
 }
 
@@ -648,4 +672,52 @@ void logout_command(char *message_to_send, int user_id, char *role)
   user_id = -1;
   strcpy(role, "");
   
+}
+
+int complete_profile_command(int cl, int user_id)
+{
+  char first_name[100];
+  char last_name[100];
+  char phone_number[100];
+  char description[1000];
+
+  if (read(cl, first_name, sizeof(first_name)) <= 0)
+  {
+    perror("Error reading first_name from client.\n");
+  }
+
+  if (read(cl, last_name, sizeof(last_name)) <= 0)
+  {
+    perror("Error reading last_name from client.\n");
+  }
+
+  if (read(cl, phone_number, sizeof(phone_number)) <= 0)
+  {
+    perror("Error reading phone_number from client.\n");
+  }
+
+  if (read(cl, description, sizeof(description)) <= 0)
+  {
+    perror("Error reading description from client.\n");
+  }
+
+  if (add_profile_information(&db, user_id, first_name, last_name, description, phone_number) == 1)
+    return 1;
+  else 
+    return 0;
+
+  
+}
+
+void display_profile_information_command(int cl, char *profile_info)
+{
+  char username[100];
+
+  if (read(cl, username, sizeof(username)) <= 0)
+  {
+    perror("Error reading username from client.\n");
+  }
+
+  select_profile_information_based_on_username(&db, username, profile_info);
+
 }
