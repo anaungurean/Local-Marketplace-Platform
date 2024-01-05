@@ -50,30 +50,26 @@ int check_user_exists(Database *db, char *username, char *password) {
 
     snprintf(sql, sizeof(sql), "SELECT ID,ROLE FROM USERS WHERE USERNAME=? AND PASSWORD=?");
 
-    /* Execute SQL statement */
     rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
 
     if (rc != SQLITE_OK) {
         fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db->db));
-        return -1;  // Return -1 to indicate an error
+        return -1;  
     }
 
-    /* Bind parameters (username and password) to the prepared statement */
     sqlite3_bind_text(res, 1, username, -1, SQLITE_STATIC);
     sqlite3_bind_text(res, 2, password, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(res);
 
     if (rc == SQLITE_ROW) {
-        /* If a row is returned, the user exists */
         int user_id = sqlite3_column_int(res, 0);
         sqlite3_finalize(res);
         return user_id;
     } else {
-        /* Handle other errors */
         fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
         sqlite3_finalize(res);
-        return -1;  // Return -1 to indicate an error
+        return -1;   
     }
 }
 
@@ -88,7 +84,6 @@ bool check_username_exists(Database *db, char *username) {
 
     snprintf(sql, sizeof(sql), "SELECT COUNT(ID) FROM USERS WHERE USERNAME=?");
 
-    /* Execute SQL statement */
     rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
 
     if (rc != SQLITE_OK) {
@@ -96,13 +91,11 @@ bool check_username_exists(Database *db, char *username) {
         return false;
     }
 
-    /* Bind parameters (username and password) to the prepared statement */
     sqlite3_bind_text(res, 1, username, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(res);
 
     if (rc == SQLITE_ROW) {
-        /* If a row is returned, the user exists */
         const char *count = sqlite3_column_text(res, 0);
 
         if (strcmp(count, "0") == 0) {
@@ -148,7 +141,6 @@ void get_role_user(Database *db, int userId, char *role) {
 
     snprintf(sql, sizeof(sql), "SELECT ROLE FROM USERS WHERE ID=?");
 
-    /* Execute SQL statement */
     rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
 
     if (rc != SQLITE_OK) {
@@ -156,19 +148,16 @@ void get_role_user(Database *db, int userId, char *role) {
         return;
     }
 
-    /* Bind parameters (username and password) to the prepared statement */
     sqlite3_bind_int(res, 1, userId);
 
     rc = sqlite3_step(res);
 
     if (rc == SQLITE_ROW) {
-        /* If a row is returned, the user exists */
         const char *role1 = sqlite3_column_text(res, 0);
         strcpy(role, role1);
         sqlite3_finalize(res);
         return;
     } else {
-        /* Handle other errors */
         fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db->db));
         sqlite3_finalize(res);
         return;
@@ -202,7 +191,6 @@ void display_products_by_user_id(Database *db, int user_id, char *products)
 
         snprintf(sql, sizeof(sql), "SELECT * FROM PRODUCTS WHERE ID_USER=?");
 
-        /* Execute SQL statement */
         rc = sqlite3_prepare_v2(db->db, sql, -1, &res, 0);
 
         if (rc != SQLITE_OK) {

@@ -24,8 +24,8 @@ typedef struct thData{
 
 Database db;
 
-static void *treat(void *); 
-void raspunde(void *);
+static void *treat_client(void *); 
+void send_response_to_client(void *);
 void handle_command(int input_command, char message_to_send[], struct thData *);
 int login_command(int cl);
 int register_command(int cl);
@@ -49,12 +49,11 @@ void display_profile_information_command(int cl, char *profile_info);
 
 int main ()
 {
-  struct sockaddr_in server;	// structura folosita de server
+  struct sockaddr_in server;
   struct sockaddr_in from;	
-  int nr;		//mesajul primit de trimis la client 
-  int sd;		//descriptorul de socket 
+  int sd;		 
   int pid;
-  pthread_t th[100];    //Identificatorii thread-urilor care se vor crea
+  pthread_t th[100];     
 	int i=0;
   
   if (open_database(&db, "database_marketplace.db") != SQLITE_OK) {
@@ -67,90 +66,77 @@ int main ()
     }
 
 
-  /* crearea unui socket */
   if ((sd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
       perror ("[server]Eroare la socket().\n");
       return errno;
     }
-  /* utilizarea optiunii SO_REUSEADDR */
+
   int on=1;
   setsockopt(sd,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on));
   
-  /* pregatirea structurilor de date */
   bzero (&server, sizeof (server));
   bzero (&from, sizeof (from));
   
-  /* umplem structura folosita de server */
-  /* stabilirea familiei de socket-uri */
-    server.sin_family = AF_INET;	
-  /* acceptam orice adresa */
-    server.sin_addr.s_addr = htonl (INADDR_ANY);
-  /* utilizam un port utilizator */
-    server.sin_port = htons (PORT);
+
+  server.sin_family = AF_INET;	
+  server.sin_addr.s_addr = htonl (INADDR_ANY);
+  server.sin_port = htons (PORT);
   
-  /* atasam socketul */
   if (bind (sd, (struct sockaddr *) &server, sizeof (struct sockaddr)) == -1)
     {
       perror ("[server]Eroare la bind().\n");
       return errno;
     }
 
-  /* punem serverul sa asculte daca vin clienti sa se conecteze */
   if (listen (sd, 2) == -1)
     {
       perror ("[server]Eroare la listen().\n");
       return errno;
     }
-  /* servim in mod concurent clientii...folosind thread-uri */
+
   while (1)
     {
       int client;
-      thData * td; //parametru functia executata de thread     
+      thData * td; 
       int length = sizeof (from);
 
       printf ("[server]Waiting at the port  %d...\n",PORT);
       fflush (stdout);
 
-      // client= malloc(sizeof(int));
-      /* acceptam un client (stare blocanta pina la realizarea conexiunii) */
       if ( (client = accept (sd, (struct sockaddr *) &from, &length)) < 0)
 	{
 	  perror ("[server]Eroare la accept().\n");
 	  continue;
 	}
 	
-        /* s-a realizat conexiunea, se astepta mesajul */
-    
-	// int idThread; //id-ul threadului
-	// int cl; //descriptorul intors de accept
+      
 
 	td=(struct thData*)malloc(sizeof(struct thData));	
 	td->idThread=i++;
 	td->cl=client;
 
-	pthread_create(&th[i], NULL, &treat, td);	      
+	pthread_create(&th[i], NULL, &treat_client, td);	      
 				
-	}//while    
+	}   
 };			
 
 
-static void *treat(void * arg)
+static void *treat_client(void * arg)
 {		
 		struct thData tdL; 
 		tdL= *((struct thData*)arg);	
 		printf ("[thread]- %d - Waiting a command...\n", tdL.idThread);
 		fflush (stdout);		 
 		pthread_detach(pthread_self());		
-		raspunde((struct thData*)arg);
-		/* am terminat cu acest client, inchidem conexiunea */
+		send_response_to_client((struct thData*)arg);
 		close ((intptr_t)arg);
 		return(NULL);	
   		
 };
 
 
-void raspunde(void *arg)
+void send_response_to_client(void *arg)
 {
   int input_command, i=0;
 	struct thData tdL; 
@@ -462,7 +448,6 @@ void add_product_command(int cl, int user_id)
 void view_my_products_command(int cl, int user_id, char *products)
 {
   display_products_by_user_id(&db, user_id,products);
-  printf("%s\n", products);
 }
 
 int delete_product_command(int cl, int user_id)

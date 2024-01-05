@@ -10,15 +10,13 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-/* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
-/* portul de conectare la server*/
 int port;
 char role[10];
 #define WelcomeMenu "\n\n Welcome to the LocalMarketPlacePlatform! Please select one option from below. The commands are: \n 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n\n"
-#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10. See the best sellers. \n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
-#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10. See the best seller.\n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
+#define HomeMenuSeller "\n\n You are a Seller. You have the permissions to: 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n 4. Add a new product. \n 5. Edit a product  -> in case you want to change the price or add stock. \n 6. Delete a product -> you need to know the id of the product \n 7. See your products \n 8. See all products \n 9. See your sales. \n 10. See the best sellers. \n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
+#define HomeMenuBuyer "\n\n You are a Buyer. You have the opportunities to: 1. Login \n 2. Register -> to create an account \n 3. Exit -> to close the app \n 4. See all products .\n 5. Buy a product -> you need to know the id of the product. \n 6. View a history of purchases made. \n 7. Find a product by category \n 8. Find a product by price \n 9. Return a produs -> you need to know the id of the transaction \n 10. See the best seller.\n 11. See the most sold products.\n 12. Complete your profile \n 13. See the profile of a user \n 14. LogOut  \n\n"
 
 void handle_command(int input_command, int sd, char *received_message);
 void login_command(int sd);
@@ -47,37 +45,30 @@ void display_profile_user_command(int sd);
 
 int main (int argc, char *argv[])
 {
-  int sd;			// descriptorul de socket
-  struct sockaddr_in server;	// structura folosita pentru conectare 
-  /* exista toate argumentele in linia de comanda? */
+  int sd;			 
+  struct sockaddr_in server;	
+
   if (argc != 3)
     {
-      printf ("Sintaxa: %s <adresa_server> <port>\n", argv[0]);
+      printf ("Sintax should be: %s <adress_server> <port_number>\n", argv[0]);
       return -1;
     }
 
-  /* stabilim portul */
   port = atoi (argv[2]);
 
-  /* cream socketul */
   if ((sd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
-      perror ("Eroare la socket().\n");
+      perror ("Erorr socket().\n");
       return errno;
     }
 
-  /* umplem structura folosita pentru realizarea conexiunii cu serverul */
-  /* familia socket-ului */
   server.sin_family = AF_INET;
-  /* adresa IP a serverului */
   server.sin_addr.s_addr = inet_addr(argv[1]);
-  /* portul de conectare */
   server.sin_port = htons (port);
   
-  /* ne conectam la server */
   if (connect (sd, (struct sockaddr *) &server,sizeof (struct sockaddr)) == -1)
     {
-      perror ("[client]Eroare la connect().\n");
+      perror ("[client]Erorr connect().\n");
       return errno;
     }
 
@@ -101,16 +92,15 @@ int read_commands(int sd)
   
   if (write (sd,&input_command,sizeof(int)) <= 0)
       {
-        perror ("[client]Eroare la write() spre server.\n");
+        perror ("[client]Erorr write(input_command) to server.\n");
         return errno;
       }
  
   handle_command(input_command, sd, received_message);
-  /* citirea raspunsului dat de server 
-     (apel blocant pina cind serverul raspunde) */
+
   if (read (sd, &received_message,sizeof(received_message)) < 0)
     {
-      perror ("[client]Eroare la read() de la server.\n");
+      perror ("[client]Eroarr read(message) from server.\n");
       return errno;
     }
   printf ("\n%s\n", received_message);
