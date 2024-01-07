@@ -289,7 +289,7 @@ void print_home_menu(char *received_messagem)
     else if (strcmp(role,"Buyer") == 0)
       printf("%s", HomeMenuBuyer);
     else
-      printf("You don't have a role yet. Please login or register.\n");
+      printf("You don't have a role yet. Please login.\n");
 }
 
 void add_product_command(int sd)

@@ -30,16 +30,6 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
    return 0;
 }
 
-int execute_query(Database *db, const char *query) {
-    char *zErrMsg = 0;
-    int rc = sqlite3_exec(db->db, query, callback, 0, &zErrMsg);
-    if (rc != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
-    }
-    return rc;
-}
-
 int check_user_exists(Database *db, char *username, char *password) {
     char *zErrMsg = 0;
     int rc;
@@ -176,7 +166,6 @@ int add_new_product(Database *db, const char *name, const char *category, float 
         return 0;
     }
 
-    printf("Product added successfully.\n");
     return 1;
 }
 
@@ -254,7 +243,6 @@ int delete_product(Database *db, int id_product, int id_user)
         return 0;
     }
 
-    printf("Product deleted successfully.\n");
     return 1;
     }
 }
@@ -482,11 +470,8 @@ void insert_new_transactions(Database *db, int id_product, int quantity, int id_
 void select_transactions_by_buyer_id(Database *db, int id_buyer, char *transactions)
 {
     char select_query[1000];
-    snprintf(select_query, sizeof(select_query), "SELECT p.name, t.total_cost, t.date, t.quantity, u.username, t.id \
-                       FROM transactions t \
-                       JOIN products p ON t.id_product = p.id \
-                       JOIN users u ON t.id_seller = u.id \
-                       WHERE t.id_buyer = %d;", id_buyer);
+    snprintf(select_query, sizeof(select_query), "SELECT p.name, t.total_cost, t.date, t.quantity, u.username, t.id FROM transactions t \
+                       JOIN products p ON t.id_product = p.id  JOIN users u ON t.id_seller = u.id WHERE t.id_buyer = %d;", id_buyer);
     int rc;
     sqlite3_stmt *res;
     rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
@@ -516,10 +501,7 @@ void select_sales_by_seller_id(Database *db, int id_seller, char *sales)
 {
     char select_query[1000];
     snprintf(select_query, sizeof(select_query), "SELECT p.name AS product_name, t.total_cost, t.date AS transaction_date, t.quantity, u.username AS seller_username \
-                       FROM transactions t \
-                       JOIN products p ON t.id_product = p.id \
-                       JOIN users u ON t.id_buyer = u.id \
-                       WHERE t.id_seller = %d;", id_seller);
+                       FROM transactions t  JOIN products p ON t.id_product = p.id  JOIN users u ON t.id_buyer = u.id  WHERE t.id_seller = %d;", id_seller);
     int rc;
     sqlite3_stmt *res;
     rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
@@ -729,12 +711,8 @@ void delete_transaction(Database *db, int id_transaction)
 void select_the_best_seller(Database *db, char* best_sellers)
 {
     char select_query[1000];
-    snprintf(select_query, sizeof(select_query), "SELECT u.username, SUM(t.total_cost) AS total_earned \
-                       FROM transactions t \
-                       JOIN users u ON t.id_seller = u.id \
-                       GROUP BY u.username \
-                       ORDER BY total_earned DESC \
-                       LIMIT 2;");
+    snprintf(select_query, sizeof(select_query), "SELECT u.username, SUM(t.total_cost) AS total_earned FROM transactions t JOIN users u ON t.id_seller = u.id \
+                       GROUP BY u.username  ORDER BY total_earned DESC  LIMIT 2;");
     int rc;
     sqlite3_stmt *res;
     rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
@@ -755,12 +733,8 @@ void select_the_best_seller(Database *db, char* best_sellers)
 void select_the_most_sold_product(Database *db, char* most_sold_products)
 {
     char select_query[1000];
-    snprintf(select_query, sizeof(select_query), "SELECT p.name, SUM(t.quantity) \
-                       FROM transactions t \
-                       JOIN products p ON t.id_product = p.id \
-                       GROUP BY p.name \
-                       ORDER BY 2 DESC \
-                       LIMIT 2;");
+    snprintf(select_query, sizeof(select_query), "SELECT p.name, SUM(t.quantity) FROM transactions t JOIN products p ON t.id_product = p.id \
+                       GROUP BY p.name ORDER BY 2 DESC LIMIT 2;");
     int rc;
     sqlite3_stmt *res;
     rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);
@@ -796,9 +770,7 @@ int add_profile_information(Database *db, int id_user, char *first_name, char *l
 void select_profile_information_based_on_username(Database *db, char* username, char* profile_information)
 {
     char select_query[1000];
-    snprintf(select_query, sizeof(select_query), "SELECT FIRST_NAME, LAST_NAME, DESCRIPTION, PHONE_NUMBER \
-                       FROM users \
-                       WHERE username = '%s';", username);
+    snprintf(select_query, sizeof(select_query), "SELECT FIRST_NAME, LAST_NAME, DESCRIPTION, PHONE_NUMBER FROM users WHERE username = '%s';", username);
     int rc;
     sqlite3_stmt *res;
     rc = sqlite3_prepare_v2(db->db, select_query, -1, &res, 0);

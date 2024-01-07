@@ -11,25 +11,25 @@
 #include "stdbool.h"
 #include "sqlite3_database.h"
 
-#define PORT 2908
+#define PORT 2002
 
 extern int errno;
 
-typedef struct thData{
-	int idThread; 
+typedef struct thread_info{
+	int id_thread; 
 	int cl; 
-  int userId;
-  char role[10];
-}thData;
+  int id_user;
+  char role_user[10];
+}thread_info;
 
 Database db;
 
 static void *treat_client(void *); 
 void send_response_to_client(void *);
-void handle_command(int input_command, char message_to_send[], struct thData *);
+void handle_command(int input_command, char message_to_send[], struct thread_info *);
 int login_command(int cl);
 int register_command(int cl);
-void add_product_command(int cl, int user_id);
+void add_product_command(int cl, int user_id, char *message_to_send);
 void view_my_products_command(int cl, int user_id, char *products);
 int delete_product_command(int cl, int user_id);
 void check_if_user_can_edit_product(int cl, int user_id, char *info, char *id_product);
@@ -43,7 +43,7 @@ void view_products_filtred_by_price_command(Database *db, int cl, char *products
 void return_a_product_command(int cl, int user_id, char *message_to_send);
 void display_the_best_seller(char *message_to_send);
 void display_the_most_sold_product_command(char *message_to_send);
-void logout_command(char *message_to_send, int user_id, char *role);
+void logout_command(char *message_to_send, int user_id, char *role_user);
 int complete_profile_command(int cl, int user_id);
 void display_profile_information_command(int cl, char *profile_info);
 
@@ -52,7 +52,6 @@ int main ()
   struct sockaddr_in server;
   struct sockaddr_in from;	
   int sd;		 
-  int pid;
   pthread_t th[100];     
 	int i=0;
   
@@ -78,7 +77,6 @@ int main ()
   bzero (&server, sizeof (server));
   bzero (&from, sizeof (from));
   
-
   server.sin_family = AF_INET;	
   server.sin_addr.s_addr = htonl (INADDR_ANY);
   server.sin_port = htons (PORT);
@@ -98,22 +96,20 @@ int main ()
   while (1)
     {
       int client;
-      thData * td; 
+      thread_info * td; 
       int length = sizeof (from);
 
       printf ("[server]Waiting at the port  %d...\n",PORT);
       fflush (stdout);
 
       if ( (client = accept (sd, (struct sockaddr *) &from, &length)) < 0)
-	{
-	  perror ("[server]Eroare la accept().\n");
-	  continue;
-	}
+      {
+        perror ("[server]Eroare la accept().\n");
+        continue;
+      }
 	
-      
-
-	td=(struct thData*)malloc(sizeof(struct thData));	
-	td->idThread=i++;
+	td=(struct thread_info*)malloc(sizeof(struct thread_info));	
+	td->id_thread=i++;
 	td->cl=client;
 
 	pthread_create(&th[i], NULL, &treat_client, td);	      
@@ -124,12 +120,12 @@ int main ()
 
 static void *treat_client(void * arg)
 {		
-		struct thData tdL; 
-		tdL= *((struct thData*)arg);	
-		printf ("[thread]- %d - Waiting a command...\n", tdL.idThread);
+		struct thread_info tdL; 
+		tdL= *((struct thread_info*)arg);	
+		printf ("[thread]- %d - Waiting a command...\n", tdL.id_thread);
 		fflush (stdout);		 
 		pthread_detach(pthread_self());		
-		send_response_to_client((struct thData*)arg);
+		send_response_to_client((struct thread_info*)arg);
 		close ((intptr_t)arg);
 		return(NULL);	
   		
@@ -139,47 +135,47 @@ static void *treat_client(void * arg)
 void send_response_to_client(void *arg)
 {
   int input_command, i=0;
-	struct thData tdL; 
-	tdL= *((struct thData*)arg);
+	struct thread_info tdL; 
+	tdL= *((struct thread_info*)arg);
   do{
 	if (read (tdL.cl, &input_command,sizeof(int)) <= 0)
 			{
-			  printf("[Thread %d]\n",tdL.idThread);
+			  printf("[Thread %d]\n",tdL.id_thread);
 			  perror ("Eroare la read() de la client.\n");
 
 			}
       
   char message_to_send[9000];
   handle_command(input_command, message_to_send, &tdL);
-  printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.idThread, message_to_send);
+  printf ("[Thread %d]Mesajul de trimis este: %s\n",tdL.id_thread, message_to_send);
   if (write (tdL.cl, message_to_send, sizeof(message_to_send)) <= 0)
 		{
-		 printf("[Thread %d] ",tdL.idThread);
+		 printf("[Thread %d] ",tdL.id_thread);
 		 perror ("[Thread]Eroare la write() catre client.\n");
 		}
 	else
-		printf ("[Thread %d]Mesajul a fost trasmis cu succes.\n",tdL.idThread);	
+		printf ("[Thread %d]Mesajul a fost trasmis cu succes.\n",tdL.id_thread);	
 		
   }while(input_command != 3);
 
 }
 
-void handle_command(int input_command, char message_to_send[], struct thData * tdL)
+void handle_command(int input_command, char message_to_send[], struct thread_info * tdL)
 {  
 
     switch(input_command)
     { int ok;
         case 1:
-            if (strlen(tdL->role) > 0)
+            if (strlen(tdL->role_user) > 0)
               strcpy(message_to_send, "You are already logged in.");
             else
             {
-            int userId = login_command(tdL->cl);
-            if(userId != -1)
+            int id_user = login_command(tdL->cl);
+            if(id_user != -1)
               {
-              tdL->userId = userId;
-              get_role_user(&db, tdL->userId, tdL->role);
-              if (strcmp(tdL->role, "Seller") == 0)
+              tdL->id_user = id_user;
+              get_role_user(&db, tdL->id_user, tdL->role_user);
+              if (strcmp(tdL->role_user, "Seller") == 0)
                 strcpy(message_to_send, "You are logged in as a Seller!");
               else
                 strcpy(message_to_send, "You are logged in as a Buyer!");
@@ -203,12 +199,12 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
             strcpy(message_to_send, "Thank you for your visit!");
             break;
         case 4 :
-            if (strcmp(tdL->role, "Seller") == 0)
+            if (strcmp(tdL->role_user, "Seller") == 0)
               {
-                add_product_command(tdL->cl, tdL->userId);
-                strcpy(message_to_send, "You have added a new product.");
+                add_product_command(tdL->cl, tdL->id_user, message_to_send);
+
               }
-            else if (strcmp(tdL->role, "Buyer") == 0)
+            else if (strcmp(tdL->role_user, "Buyer") == 0)
               {
                 char products[9000];
                 products[0] = '\0';
@@ -219,17 +215,17 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
               strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 5 :
-             if (strcmp(tdL->role, "Seller") == 0)
+             if (strcmp(tdL->role_user, "Seller") == 0)
                 {
-                  ok = edit_product_command(tdL->cl, tdL->userId);
+                  ok = edit_product_command(tdL->cl, tdL->id_user);
                   if (ok == 1)
                     strcpy(message_to_send, "You have edited the product.");
                   else
                     strcpy(message_to_send, "You don't have the permissions to edit this product.");
                 }
-             else if (strcmp(tdL->role, "Buyer") == 0)
+             else if (strcmp(tdL->role_user, "Buyer") == 0)
                  {
-                  ok = buy_a_product_command(tdL->cl, tdL->userId);
+                  ok = buy_a_product_command(tdL->cl, tdL->id_user);
                   if (ok == -3)
                     strcpy(message_to_send, "The product doesn't exist.");
                   else if (ok == -2)
@@ -241,32 +237,32 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 6 :
-            if (strcmp(tdL->role, "Seller") == 0)
+            if (strcmp(tdL->role_user, "Seller") == 0)
               {
-                ok = delete_product_command(tdL->cl, tdL->userId);
+                ok = delete_product_command(tdL->cl, tdL->id_user);
                 if (ok == 1)
                     strcpy(message_to_send, "You have deleted the product.");
                 else
                   strcpy(message_to_send, "You don't have the permissions to delete this product.");
               }
-            else if (strcmp(tdL->role, "Buyer") == 0)
+            else if (strcmp(tdL->role_user, "Buyer") == 0)
             {   char transactions[9000];
                 transactions[0] = '\0';
-                display_my_transactions_command(tdL->cl, tdL->userId, transactions);
+                display_my_transactions_command(tdL->cl, tdL->id_user, transactions);
                 strcpy(message_to_send, transactions);
             }
             else
               strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 7:
-            if (strcmp(tdL->role, "Seller") == 0)
+            if (strcmp(tdL->role_user, "Seller") == 0)
               {
                 char products[9000];
                 products[0] = '\0';
-                view_my_products_command(tdL->cl, tdL->userId, products);
+                view_my_products_command(tdL->cl, tdL->id_user, products);
                 strcpy(message_to_send, products);
               }
-            else if (strcmp(tdL->role, "Buyer") == 0)
+            else if (strcmp(tdL->role_user, "Buyer") == 0)
               {
                 char products_by_category[9000];
                 products_by_category[0] = '\0';
@@ -277,14 +273,14 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
               strcpy(message_to_send, "You need to log in to have access to this command.");
             break;
         case 8:
-              if (strcmp(tdL->role, "Seller") == 0)
+              if (strcmp(tdL->role_user, "Seller") == 0)
               {
                 char products[9000];
                 products[0] = '\0';
                 view_all_products_command(tdL->cl,products);
                 strcpy(message_to_send, products);
               }
-              else if (strcmp(tdL->role, "Buyer") == 0)
+              else if (strcmp(tdL->role_user, "Buyer") == 0)
               {
                 char products_filtred_by_price[9000];
                 products_filtred_by_price[0] = '\0';
@@ -295,34 +291,34 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 9:
-              if (strcmp(tdL->role, "Seller") == 0)
+              if (strcmp(tdL->role_user, "Seller") == 0)
                 {
                   char sales[9000];
                   sales[0] = '\0';
-                  display_my_sales_command(tdL->cl, tdL->userId, sales);
+                  display_my_sales_command(tdL->cl, tdL->id_user, sales);
                   strcpy(message_to_send, sales);
                 }
-              else if (strcmp(tdL->role, "Buyer") == 0)
-                  return_a_product_command(tdL->cl, tdL->userId, message_to_send);
+              else if (strcmp(tdL->role_user, "Buyer") == 0)
+                  return_a_product_command(tdL->cl, tdL->id_user, message_to_send);
               else
                   strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 10:
-              if (strlen(tdL->role) > 0)
+              if (strlen(tdL->role_user) > 0)
                 display_the_best_seller(message_to_send);
               else
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 11:
-              if (strlen(tdL->role) > 0)
+              if (strlen(tdL->role_user) > 0)
                 display_the_most_sold_product_command(message_to_send);
               else 
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 12:
-              if (strlen(tdL->role) > 0)
+              if (strlen(tdL->role_user) > 0)
               {
-                if (complete_profile_command(tdL->cl, tdL->userId) == 1)
+                if (complete_profile_command(tdL->cl, tdL->id_user) == 1)
                   strcpy(message_to_send, "Your profile was updated. Thank you!");
                 else
                   strcpy(message_to_send, "Sorry, but your profile was not updated.Please, try again!");
@@ -331,7 +327,7 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 13:
-              if (strlen(tdL->role) > 0)
+              if (strlen(tdL->role_user) > 0)
                   {
                     char profile_info[9000];
                     profile_info[0] = '\0';
@@ -342,8 +338,8 @@ void handle_command(int input_command, char message_to_send[], struct thData * t
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
         case 14:
-              if (strlen(tdL->role) > 0)
-                logout_command(message_to_send, tdL->userId, tdL->role);
+              if (strlen(tdL->role_user) > 0)
+                logout_command(message_to_send, tdL->id_user, tdL->role_user);
               else
                 strcpy(message_to_send, "You need to log in to have access to this command.");
               break;
@@ -378,7 +374,7 @@ int register_command(int cl)
 {  
   char username[100];
   char password[100];
-  char role[10];
+  char role_user[10];
 
   if (read(cl, username, sizeof(username)) <= 0)
   {
@@ -390,9 +386,9 @@ int register_command(int cl)
     perror("Error reading password from client.\n");
   }
 
-  if (read(cl, role, sizeof(role)) <= 0)
+  if (read(cl, role_user, sizeof(role_user)) <= 0)
   {
-    perror("Error reading role from client.\n");
+    perror("Error reading role_user from client.\n");
   }
 
   if(strlen(username) == 0 || strlen(password) == 0)
@@ -400,13 +396,13 @@ int register_command(int cl)
   else if (check_username_exists(&db,username))
     return -2;
   
-  if (add_new_user(&db, username, password, role) == 1)
+  if (add_new_user(&db, username, password, role_user) == 1)
     return 1;
   else
     return 0;
 }
 
-void add_product_command(int cl, int user_id)
+void add_product_command(int cl, int user_id, char *message_to_send)
 {
     char name[100];
     char category[100];
@@ -440,9 +436,9 @@ void add_product_command(int cl, int user_id)
     }
 
     if (add_new_product(&db, name, category, atof(price), atoi(stock), unit_of_measure, user_id) == 1)
-      printf("Product added successfully.\n");
+      strcpy(message_to_send, "Product added succesfully.");
     else
-      printf("Product not added.\n");
+      strcpy(message_to_send, "Product was not added due to an error. Please, try again.");
 }
 
 void view_my_products_command(int cl, int user_id, char *products)
@@ -651,11 +647,11 @@ void display_the_most_sold_product_command(char *message_to_send)
   strcpy(message_to_send, most_sold_product);
 }
 
-void logout_command(char *message_to_send, int user_id, char *role)
+void logout_command(char *message_to_send, int user_id, char *role_user)
 {
   strcpy(message_to_send, "You have been logged out. If you want to have acces again to functions, please log in again.");
   user_id = -1;
-  strcpy(role, "");
+  strcpy(role_user, "");
   
 }
 
